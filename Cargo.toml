@@ -11,9 +11,9 @@ exclude = ["Gir*.toml", "tests/**/*", "*.md", "generator.py"]
 edition = "2021"
 
 [dependencies]
-bitflags = "2.6"
+bitflags = "2.8"
 getopts = "0.2.21"
-getter_rules = { package = "fix-getters-rules", version = "0.3.0", default-features = false }
+getter_rules = { package = "fix-getters-rules", version = "0.3.2", default-features = false }
 xml-rs = "0.8"
 toml = { version = "0.8" , features = ["preserve_order"] }
 env_logger = { version = "0.11", default-features = false }
