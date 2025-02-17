@@ -458,7 +458,7 @@ mod tests {
 	use crate::{library::Nullable, version::Version};
 
 	fn functions_toml(input:&str) -> ::toml::Value {
-		let mut value:::toml::value::Table = ::toml::from_str(input).unwrap();
+		let mut value::toml::value::Table = ::toml::from_str(input).unwrap();
 		value.remove("f").unwrap()
 	}
 

@@ -25,7 +25,7 @@ authors = [
 	"Guillaume Gomez <guillaume1.gomez@gmail.com>",
 ]
 build = "build.rs"
-edition = "2021"
+edition = "2024"
 exclude = ["Gir*.toml", "tests/**/*", "*.md", "generator.py"]
 name = "gir"
 version = "0.0.1"
