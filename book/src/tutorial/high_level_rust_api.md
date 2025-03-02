@@ -163,17 +163,17 @@ manual = []
 Many of these options look familiar from the last chapter but there are also a
 few new things in here. Let's take a look at them:
 
--   `work_mode` value is now set to `normal`, it means it'll generate the
-    high-level Rust api instead of the sys-level.
--   `generate_safety_asserts` is used to generates checks to ensure that, or any
-    other kind of initialization needed before being able to use the library.
--   `deprecate_by_min_version` is used to generate a
-    [Rust "#[deprecated]"](https://doc.rust-lang.org/edition-guide/rust-2018/the-compiler/an-attribute-for-deprecation.html)
-    attribute based on the deprecation information provided by the `.gir` file.
--   `generate = []`: this line currently does nothing. We say to [gir] to
-    generate nothing. We'll fill it later on.
--   `manual = []`: this line currently does nothing. We can let [gir] know about
-    objects which it does not have to generate code for.
+- `work_mode` value is now set to `normal`, it means it'll generate the
+  high-level Rust api instead of the sys-level.
+- `generate_safety_asserts` is used to generates checks to ensure that, or any
+  other kind of initialization needed before being able to use the library.
+- `deprecate_by_min_version` is used to generate a
+  [Rust "#[deprecated]"](https://doc.rust-lang.org/edition-guide/rust-2018/the-compiler/an-attribute-for-deprecation.html)
+  attribute based on the deprecation information provided by the `.gir` file.
+- `generate = []`: this line currently does nothing. We say to [gir] to generate
+  nothing. We'll fill it later on.
+- `manual = []`: this line currently does nothing. We can let [gir] know about
+  objects which it does not have to generate code for.
 
 Let's make a first generation of our high-level Rust API!
 
@@ -325,14 +325,14 @@ give it a try:
 We now have the list of all the not-yet generated items. Quite convenient. There
 can be different kinds of not generated items:
 
--   `[NOT GENERATED]`: Objects marked with `[NOT GENERATED]` are objects that we
-    can generate, but we did not (yet) add to the `generate` array.
--   `[NOT GENERATED PARENT]`: These objects live in a dependency of the current
-    library. These are the objects we will add to the `manual` array in the
-    following steps.
--   `[NOT GENERATED FUNCTION]`: These are global functions that were not
-    generated. To fix it, we just add `"NameOfYourLibrary.*"` to the `generate`
-    array in the Git.toml and add the following line to your src/lib.rs file:
+- `[NOT GENERATED]`: Objects marked with `[NOT GENERATED]` are objects that we
+  can generate, but we did not (yet) add to the `generate` array.
+- `[NOT GENERATED PARENT]`: These objects live in a dependency of the current
+  library. These are the objects we will add to the `manual` array in the
+  following steps.
+- `[NOT GENERATED FUNCTION]`: These are global functions that were not
+  generated. To fix it, we just add `"NameOfYourLibrary.*"` to the `generate`
+  array in the Git.toml and add the following line to your src/lib.rs file:
 
 ```rust
 pub mod functions {
@@ -345,18 +345,18 @@ pub mod functions {
 In order to generate the code for the safe wrapper, we follow these steps until
 all objects have been generated:
 
--   Run `gir -o . -m not_bound` to see which objects have not been generated yet
--   Pick one of the types marked with `[NOT GENERATED]`
--   Add it to the `generate` array in the Gir.toml file
--   Run `gir -o .` to generate the code
--   Open the generated files under src/auto and have a look at them
--   Search for `/*Ignored*/`. If the type name following `/*Ignored*/` is
-    prepended by `[crate_name]::` (e.g `Ignored*/&glib::MarkupParseContext`), -
-    then we add it to the `manual` array. By doing so we tell [gir] that those
-    types have been generated somewhere else and that they can be used just like
-    the other types. - Otherwise, the type comes from the current crate and we
-    just put it into the `generate` list of the `Gir.toml` file.
--   Start with the first step again
+- Run `gir -o . -m not_bound` to see which objects have not been generated yet
+- Pick one of the types marked with `[NOT GENERATED]`
+- Add it to the `generate` array in the Gir.toml file
+- Run `gir -o .` to generate the code
+- Open the generated files under src/auto and have a look at them
+- Search for `/*Ignored*/`. If the type name following `/*Ignored*/` is
+  prepended by `[crate_name]::` (e.g `Ignored*/&glib::MarkupParseContext`), -
+  then we add it to the `manual` array. By doing so we tell [gir] that those
+  types have been generated somewhere else and that they can be used just like
+  the other types. - Otherwise, the type comes from the current crate and we
+  just put it into the `generate` list of the `Gir.toml` file.
+- Start with the first step again
 
 The names of the objects are not the same as the crates names. You have to use
 the names of the corresponding gir files.

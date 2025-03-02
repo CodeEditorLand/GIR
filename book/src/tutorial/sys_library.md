@@ -26,18 +26,18 @@ work_mode = "sys"
 single_version_file = true
 ```
 
--   `library` stands for the name of the library we want to generate.
--   `version` stands for the version of the library to be used.
--   `min_cfg_version` will be the minimum version supported by the generated
-    bindings.
--   `target_path` stands for the location where the files will be generated.
--   `girs_directories` stands for the location of the `.gir` files.
--   `work_mode` stands for the mode gir is using. The options here are `sys` and
-    `normal`.
--   `single_version_file` is a very useful option when you have a lot of
-    generated files (like we'll have). Instead of generating the gir hash commit
-    used for the generation in the header of all generated files, it'll just
-    write it inside one file, removing `git diff` noise **a lot**.
+- `library` stands for the name of the library we want to generate.
+- `version` stands for the version of the library to be used.
+- `min_cfg_version` will be the minimum version supported by the generated
+  bindings.
+- `target_path` stands for the location where the files will be generated.
+- `girs_directories` stands for the location of the `.gir` files.
+- `work_mode` stands for the mode gir is using. The options here are `sys` and
+  `normal`.
+- `single_version_file` is a very useful option when you have a lot of generated
+  files (like we'll have). Instead of generating the gir hash commit used for
+  the generation in the header of all generated files, it'll just write it
+  inside one file, removing `git diff` noise **a lot**.
 
 You can find out the values for `library` and `version` by looking at the name
 of the .gir file of your library. In our case it is called Pango-1.0.gir. This
@@ -57,11 +57,11 @@ gir -o .
 
 You should now see new files and a new folder.
 
--   `build.rs`
--   `Cargo.toml`
--   `Gir.toml`
--   `src/lib.rs`
--   `tests/`
+- `build.rs`
+- `Cargo.toml`
+- `Gir.toml`
+- `src/lib.rs`
+- `tests/`
 
 Now let's try to build it:
 

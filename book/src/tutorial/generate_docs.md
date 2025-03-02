@@ -7,10 +7,10 @@ the safe wrapper crate:
 gir -c Gir.toml -d ../gir-files --doc-target-path docs.md -m doc
 ```
 
--   `-d ../gir-files`: flag to select the folder containing the .gir files.
--   `--doc-target-path docs.md`: flag to select the name of the markdown file
-    containing the documentation.
--   `-m doc`: flag to select the work mode for generating the documentation.
+- `-d ../gir-files`: flag to select the folder containing the .gir files.
+- `--doc-target-path docs.md`: flag to select the name of the markdown file
+  containing the documentation.
+- `-m doc`: flag to select the work mode for generating the documentation.
 
 It'll generate a markdown file if everything went fine. It contains all of the
 crate's documentation. If you want to put it into your crate's source code like
