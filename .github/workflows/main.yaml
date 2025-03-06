@@ -24,9 +24,9 @@ jobs:
 
     steps:
       - name: Acquire source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
       - name: Acquire Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: actions-rs/toolchain@v1.0.7
         with:
           toolchain: ${{ matrix.toolchain }}
           override: true
@@ -34,17 +34,17 @@ jobs:
           components: rustfmt, clippy
         id: toolchain
       - name: Cache cargo registry
-        uses: actions/cache@v4.2.0
+        uses: actions/cache@v4.2.2
         with:
           path: ~/.cargo/registry
           key: checks-${{ runner.os }}-cargo-registry-trimmed
       - name: Cache cargo git trees
-        uses: actions/cache@v4.2.0
+        uses: actions/cache@v4.2.2
         with:
           path: ~/.cargo/git
           key: checks-${{ runner.os }}-cargo-gits-trimmed
       - name: Cache cargo build
-        uses: actions/cache@v4.2.0
+        uses: actions/cache@v4.2.2
         with:
           path: target
           key: checks-${{ runner.os }}-cargo-target-dir-${{ steps.toolchain.outputs.rustc_hash }}
@@ -85,9 +85,9 @@ jobs:
 
     steps:
       - name: Acquire source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
       - name: Acquire Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: actions-rs/toolchain@v1.0.7
         with:
           toolchain: ${{ matrix.toolchain }}
           override: true
@@ -103,17 +103,17 @@ jobs:
           echo "::set-env name=LIBGIT2_SYS_USE_PKG_CONFIG::1"
         if: matrix.os == 'windows-latest'
       - name: Cache cargo registry
-        uses: actions/cache@v4.2.0
+        uses: actions/cache@v4.2.2
         with:
           path: ~/.cargo/registry
           key: build-${{ runner.os }}-cargo-registry-trimmed
       - name: Cache cargo git trees
-        uses: actions/cache@v4.2.0
+        uses: actions/cache@v4.2.2
         with:
           path: ~/.cargo/git
           key: build-${{ runner.os }}-cargo-gits-trimmed
       - name: Cache cargo build
-        uses: actions/cache@v4.2.0
+        uses: actions/cache@v4.2.2
         with:
           path: target
           key: build-${{ runner.os }}-cargo-target-dir-${{ steps.toolchain.outputs.rustc_hash }}
@@ -129,7 +129,7 @@ jobs:
         run: pacman --noconfirm -S mingw-w64-${{ matrix.arch }}-libgit2
         if: matrix.os == 'windows-latest'
       - name: "Acquire gir-files"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
         with:
           repository: gtk-rs/gir-files
           ref: master
@@ -145,7 +145,7 @@ jobs:
           command: test
           args: --release
       - name: "Acquire gtk4-rs"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
         with:
           repository: gtk-rs/gtk4-rs
           ref: master
@@ -159,7 +159,7 @@ jobs:
         run: cd gtk4-rs && python3 generator.py --no-fmt --gir-path ../target/release/gir --gir-files-directories ../tests/gir-files/ && rm ../Cargo.* && cargo build
         if: matrix.os == 'ubuntu-latest'
       - name: "Acquire gtk-rs-core"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
         with:
           repository: gtk-rs/gtk-rs-core
           ref: master
