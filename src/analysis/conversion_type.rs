@@ -15,8 +15,8 @@ pub enum ConversionType {
 	/// Defaults to the object's type for the `Ok` variant if `ok_type` is
 	/// `None`.
 	Result {
-		ok_type:Arc<str>,
-		err_type:Arc<str>,
+		ok_type: Arc<str>,
+		err_type: Arc<str>,
 	},
 	/// Coded with from_glib_xxx.
 	Pointer,
@@ -28,7 +28,7 @@ pub enum ConversionType {
 }
 
 impl ConversionType {
-	pub fn of(env:&env::Env, type_id:TypeId) -> Self {
+	pub fn of(env: &env::Env, type_id: TypeId) -> Self {
 		use crate::library::{Basic::*, Type::*};
 
 		let library = &env.library;
@@ -43,49 +43,47 @@ impl ConversionType {
 		}
 
 		match library.type_(type_id) {
-			Basic(fund) => {
-				match fund {
-					Boolean => Self::Scalar,
-					Int8 => Self::Direct,
-					UInt8 => Self::Direct,
-					Int16 => Self::Direct,
-					UInt16 => Self::Direct,
-					Int32 => Self::Direct,
-					UInt32 => Self::Direct,
-					Int64 => Self::Direct,
-					UInt64 => Self::Direct,
-					Char => Self::Scalar,
-					UChar => Self::Scalar,
-					Short => Self::Direct,
-					UShort => Self::Direct,
-					Int => Self::Direct,
-					UInt => Self::Direct,
-					Long => Self::Direct,
-					ULong => Self::Direct,
-					Size => Self::Direct,
-					SSize => Self::Direct,
-					Float => Self::Direct,
-					Double => Self::Direct,
-					UniChar => Self::Scalar,
-					Pointer => Self::Pointer,
-					VarArgs => Self::Unknown,
-					Utf8 => Self::Pointer,
-					Filename => Self::Pointer,
-					OsString => Self::Pointer,
-					Type => Self::Scalar,
-					TimeT => Self::Direct,
-					OffT => Self::Direct,
-					DevT => Self::Direct,
-					GidT => Self::Direct,
-					PidT => Self::Direct,
-					SockLenT => Self::Direct,
-					UidT => Self::Direct,
-					None => Self::Unknown,
-					IntPtr => Self::Direct,
-					UIntPtr => Self::Direct,
-					Bool => Self::Direct,
-					Unsupported => Self::Unknown,
-				}
+			Basic(fund) => match fund {
+				Boolean => Self::Scalar,
+				Int8 => Self::Direct,
+				UInt8 => Self::Direct,
+				Int16 => Self::Direct,
+				UInt16 => Self::Direct,
+				Int32 => Self::Direct,
+				UInt32 => Self::Direct,
+				Int64 => Self::Direct,
+				UInt64 => Self::Direct,
+				Char => Self::Scalar,
+				UChar => Self::Scalar,
+				Short => Self::Direct,
+				UShort => Self::Direct,
+				Int => Self::Direct,
+				UInt => Self::Direct,
+				Long => Self::Direct,
+				ULong => Self::Direct,
+				Size => Self::Direct,
+				SSize => Self::Direct,
+				Float => Self::Direct,
+				Double => Self::Direct,
+				UniChar => Self::Scalar,
+				Pointer => Self::Pointer,
+				VarArgs => Self::Unknown,
+				Utf8 => Self::Pointer,
+				Filename => Self::Pointer,
+				OsString => Self::Pointer,
+				Type => Self::Scalar,
+				TimeT => Self::Direct,
+				OffT => Self::Direct,
+				DevT => Self::Direct,
+				GidT => Self::Direct,
+				PidT => Self::Direct,
+				SockLenT => Self::Direct,
+				UidT => Self::Direct,
+				None => Self::Unknown,
+				IntPtr => Self::Direct,
+				UIntPtr => Self::Direct,
+				Bool => Self::Direct,
+				Unsupported => Self::Unknown,
 			},
 			Alias(alias) if alias.c_identifier == "GQuark" => Self::Scalar,
 			Alias(alias) => Self::of(env, alias.typ),
@@ -100,15 +98,9 @@ impl ConversionType {
 			List(_) => Self::Pointer,
 			SList(_) => Self::Pointer,
 			PtrArray(_) => Self::Pointer,
-			Function(super::library::Function { name, .. })
-				if name == "AsyncReadyCallback" =>
-			{
-				Self::Direct
-			},
+			Function(super::library::Function { name, .. }) if name == "AsyncReadyCallback" => Self::Direct,
 			Function(_) => Self::Direct,
-			Custom(super::library::Custom { conversion_type, .. }) => {
-				conversion_type.clone()
-			},
+			Custom(super::library::Custom { conversion_type, .. }) => conversion_type.clone(),
 			_ => Self::Unknown,
 		}
 	}

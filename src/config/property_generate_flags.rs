@@ -16,7 +16,7 @@ bitflags! {
 impl FromStr for PropertyGenerateFlags {
 	type Err = String;
 
-	fn from_str(s:&str) -> Result<Self, Self::Err> {
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		match s {
 			"get" => Ok(Self::GET),
 			"set" => Ok(Self::SET),
@@ -27,7 +27,7 @@ impl FromStr for PropertyGenerateFlags {
 }
 
 impl PropertyGenerateFlags {
-	pub fn parse_flags(toml:&toml::Value, option:&str) -> Result<Self, String> {
+	pub fn parse_flags(toml: &toml::Value, option: &str) -> Result<Self, String> {
 		let array = toml.as_result_vec(option)?;
 		let mut val = Self::empty();
 		for v in array {
@@ -48,9 +48,9 @@ impl PropertyGenerateFlags {
 mod tests {
 	use super::*;
 
-	fn parse(val:&str) -> Result<PropertyGenerateFlags, String> {
+	fn parse(val: &str) -> Result<PropertyGenerateFlags, String> {
 		let input = format!("generate={val}");
-		let table:toml::Value = toml::from_str(&input).unwrap();
+		let table: toml::Value = toml::from_str(&input).unwrap();
 		let value = table.lookup("generate").unwrap();
 		PropertyGenerateFlags::parse_flags(value, "generate")
 	}
@@ -59,18 +59,14 @@ mod tests {
 	fn parse_flags() {
 		assert_eq!(parse(r#"["get"]"#).unwrap(), PropertyGenerateFlags::GET);
 		assert_eq!(parse(r#"["set"]"#).unwrap(), PropertyGenerateFlags::SET);
-		assert_eq!(
-			parse(r#"["notify"]"#).unwrap(),
-			PropertyGenerateFlags::NOTIFY
-		);
+		assert_eq!(parse(r#"["notify"]"#).unwrap(), PropertyGenerateFlags::NOTIFY);
 		assert_eq!(
 			parse(r#"["set","get"]"#).unwrap(),
 			PropertyGenerateFlags::GET | PropertyGenerateFlags::SET
 		);
 		assert_eq!(
 			parse(r#""get""#),
-			Err("Invalid `generate` value, expected a array, found string"
-				.into())
+			Err("Invalid `generate` value, expected a array, found string".into())
 		);
 		assert_eq!(
 			parse(r#"[true]"#),
@@ -78,13 +74,7 @@ mod tests {
 			     boolean"
 				.into())
 		);
-		assert_eq!(
-			parse(r#"["bad"]"#),
-			Err("Wrong property generate flag \"bad\"".into())
-		);
-		assert_eq!(
-			parse(r#"["get", "bad"]"#),
-			Err("Wrong property generate flag \"bad\"".into())
-		);
+		assert_eq!(parse(r#"["bad"]"#), Err("Wrong property generate flag \"bad\"".into()));
+		assert_eq!(parse(r#"["get", "bad"]"#), Err("Wrong property generate flag \"bad\"".into()));
 	}
 }

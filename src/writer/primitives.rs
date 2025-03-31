@@ -2,9 +2,11 @@ use super::defines::*;
 
 // TODO: convert to macro with usage
 // format!(indent!(5, "format:{}"), 6)
-pub fn tabs(num:usize) -> String { format!("{:1$}", "", TAB_SIZE * num) }
+pub fn tabs(num: usize) -> String {
+	format!("{:1$}", "", TAB_SIZE * num)
+}
 
-pub fn format_block(prefix:&str, suffix:&str, body:&[String]) -> Vec<String> {
+pub fn format_block(prefix: &str, suffix: &str, body: &[String]) -> Vec<String> {
 	let mut v = Vec::new();
 	if !prefix.is_empty() {
 		v.push(prefix.into());
@@ -20,11 +22,11 @@ pub fn format_block(prefix:&str, suffix:&str, body:&[String]) -> Vec<String> {
 }
 
 pub fn format_block_one_line(
-	prefix:&str,
-	suffix:&str,
-	body:&[String],
-	outer_separator:&str,
-	inner_separator:&str,
+	prefix: &str,
+	suffix: &str,
+	body: &[String],
+	outer_separator: &str,
+	inner_separator: &str,
 ) -> String {
 	let mut s = format!("{prefix}{outer_separator}");
 	let mut first = true;
@@ -40,29 +42,22 @@ pub fn format_block_one_line(
 }
 
 pub fn format_block_smart(
-	prefix:&str,
-	suffix:&str,
-	body:&[String],
-	outer_separator:&str,
-	inner_separator:&str,
+	prefix: &str,
+	suffix: &str,
+	body: &[String],
+	outer_separator: &str,
+	inner_separator: &str,
 ) -> Vec<String> {
-	format_block_smart_width(
-		prefix,
-		suffix,
-		body,
-		outer_separator,
-		inner_separator,
-		MAX_TEXT_WIDTH,
-	)
+	format_block_smart_width(prefix, suffix, body, outer_separator, inner_separator, MAX_TEXT_WIDTH)
 }
 
 pub fn format_block_smart_width(
-	prefix:&str,
-	suffix:&str,
-	body:&[String],
-	outer_separator:&str,
-	inner_separator:&str,
-	max_width:usize,
+	prefix: &str,
+	suffix: &str,
+	body: &[String],
+	outer_separator: &str,
+	inner_separator: &str,
+	max_width: usize,
 ) -> Vec<String> {
 	let outer_len = prefix.len() + suffix.len() + 2 * outer_separator.len();
 	let mut inner_len = inner_separator.len() * (body.len() - 1);
@@ -73,18 +68,12 @@ pub fn format_block_smart_width(
 	if (outer_len + inner_len) > max_width {
 		format_block(prefix, suffix, body)
 	} else {
-		let s = format_block_one_line(
-			prefix,
-			suffix,
-			body,
-			outer_separator,
-			inner_separator,
-		);
+		let s = format_block_one_line(prefix, suffix, body, outer_separator, inner_separator);
 		vec![s]
 	}
 }
 
-pub fn comment_block(body:&[String]) -> Vec<String> {
+pub fn comment_block(body: &[String]) -> Vec<String> {
 	body.iter().map(|s| format!("//{s}")).collect()
 }
 
@@ -110,8 +99,7 @@ mod tests {
 	#[test]
 	fn test_format_block_smart_width_one_line_outer_separator() {
 		let body = vec!["f()".into()];
-		let actual =
-			format_block_smart_width("unsafe {", "}", &body, " ", "", 14);
+		let actual = format_block_smart_width("unsafe {", "}", &body, " ", "", 14);
 		let expected = ["unsafe { f() }"];
 		assert_eq!(actual, expected);
 	}
@@ -119,8 +107,7 @@ mod tests {
 	#[test]
 	fn test_format_block_smart_width_many_lines_outer_separator() {
 		let body = vec!["f()".into()];
-		let actual =
-			format_block_smart_width("unsafe {", "}", &body, " ", "", 13);
+		let actual = format_block_smart_width("unsafe {", "}", &body, " ", "", 13);
 		let expected = ["unsafe {", "    f()", "}"];
 		assert_eq!(actual, expected);
 	}

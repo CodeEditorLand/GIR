@@ -6,12 +6,12 @@ use crate::{env::Env, library, version::Version};
 pub struct Signature(Vec<library::TypeId>, library::TypeId, Option<Version>);
 
 impl Signature {
-	pub fn new(func:&library::Function) -> Self {
+	pub fn new(func: &library::Function) -> Self {
 		let params = func.parameters.iter().map(|p| p.typ).collect();
 		Self(params, func.ret.typ, func.version)
 	}
 
-	fn from_property(is_get:bool, typ:library::TypeId) -> Self {
+	fn from_property(is_get: bool, typ: library::TypeId) -> Self {
 		if is_get {
 			Self(vec![Default::default()], typ, None)
 		} else {
@@ -19,12 +19,7 @@ impl Signature {
 		}
 	}
 
-	pub fn has_in_deps(
-		&self,
-		env:&Env,
-		name:&str,
-		deps:&[library::TypeId],
-	) -> (bool, Option<Version>) {
+	pub fn has_in_deps(&self, env: &Env, name: &str, deps: &[library::TypeId]) -> (bool, Option<Version>) {
 		for tid in deps {
 			let full_name = tid.full_name(&env.library);
 			if let Some(info) = env.analysis.objects.get(&full_name) {
@@ -39,12 +34,12 @@ impl Signature {
 	}
 
 	pub fn has_for_property(
-		env:&Env,
-		name:&str,
-		is_get:bool,
-		typ:library::TypeId,
-		signatures:&Signatures,
-		deps:&[library::TypeId],
+		env: &Env,
+		name: &str,
+		is_get: bool,
+		typ: library::TypeId,
+		signatures: &Signatures,
+		deps: &[library::TypeId],
 	) -> (bool, Option<Version>) {
 		if let Some(params) = signatures.get(name) {
 			return (true, params.2);
@@ -63,11 +58,11 @@ impl Signature {
 		(false, None)
 	}
 
-	fn eq(&self, other:&Signature) -> bool {
+	fn eq(&self, other: &Signature) -> bool {
 		other.1 == self.1 && other.0[1..] == self.0[1..]
 	}
 
-	fn property_eq(&self, other:&Signature, is_get:bool) -> bool {
+	fn property_eq(&self, other: &Signature, is_get: bool) -> bool {
 		if self.eq(other) {
 			true
 		} else {

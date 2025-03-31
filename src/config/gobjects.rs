@@ -25,7 +25,7 @@ use crate::{
 		error::TomlHelper,
 		parsable::{Parsable, Parse},
 	},
-	library::{self, Library, TypeId, MAIN_NAMESPACE},
+	library::{self, Library, MAIN_NAMESPACE, TypeId},
 	version::Version,
 };
 
@@ -38,17 +38,23 @@ pub enum GStatus {
 }
 
 impl GStatus {
-	pub fn ignored(self) -> bool { self == Self::Ignore }
+	pub fn ignored(self) -> bool {
+		self == Self::Ignore
+	}
 
-	pub fn manual(self) -> bool { self == Self::Manual }
+	pub fn manual(self) -> bool {
+		self == Self::Manual
+	}
 
-	pub fn need_generate(self) -> bool { self == Self::Generate }
+	pub fn need_generate(self) -> bool {
+		self == Self::Generate
+	}
 }
 
 impl FromStr for GStatus {
 	type Err = String;
 
-	fn from_str(s:&str) -> Result<Self, Self::Err> {
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		match s {
 			"manual" => Ok(Self::Manual),
 			"generate" => Ok(Self::Generate),
@@ -61,79 +67,79 @@ impl FromStr for GStatus {
 /// Info about `GObject` descendant
 #[derive(Clone, Debug)]
 pub struct GObject {
-	pub name:String,
-	pub functions:Functions,
-	pub virtual_methods:VirtualMethods,
-	pub constants:Constants,
-	pub signals:Signals,
-	pub members:Members,
-	pub properties:Properties,
-	pub derives:Option<Derives>,
-	pub status:GStatus,
-	pub module_name:Option<String>,
-	pub version:Option<Version>,
-	pub cfg_condition:Option<String>,
-	pub type_id:Option<TypeId>,
-	pub final_type:Option<bool>,
-	pub fundamental_type:Option<bool>,
-	pub exhaustive:bool,
-	pub trait_name:Option<String>,
-	pub child_properties:Option<ChildProperties>,
-	pub concurrency:library::Concurrency,
-	pub ref_mode:Option<ref_mode::RefMode>,
-	pub must_use:bool,
-	pub conversion_type:Option<ConversionType>,
-	pub trust_return_value_nullability:bool,
-	pub manual_traits:Vec<String>,
-	pub align:Option<u32>,
-	pub generate_builder:bool,
-	pub builder_postprocess:Option<String>,
-	pub boxed_inline:bool,
-	pub init_function_expression:Option<String>,
-	pub copy_into_function_expression:Option<String>,
-	pub clear_function_expression:Option<String>,
-	pub visibility:Visibility,
-	pub default_value:Option<String>,
-	pub generate_doc:bool,
+	pub name: String,
+	pub functions: Functions,
+	pub virtual_methods: VirtualMethods,
+	pub constants: Constants,
+	pub signals: Signals,
+	pub members: Members,
+	pub properties: Properties,
+	pub derives: Option<Derives>,
+	pub status: GStatus,
+	pub module_name: Option<String>,
+	pub version: Option<Version>,
+	pub cfg_condition: Option<String>,
+	pub type_id: Option<TypeId>,
+	pub final_type: Option<bool>,
+	pub fundamental_type: Option<bool>,
+	pub exhaustive: bool,
+	pub trait_name: Option<String>,
+	pub child_properties: Option<ChildProperties>,
+	pub concurrency: library::Concurrency,
+	pub ref_mode: Option<ref_mode::RefMode>,
+	pub must_use: bool,
+	pub conversion_type: Option<ConversionType>,
+	pub trust_return_value_nullability: bool,
+	pub manual_traits: Vec<String>,
+	pub align: Option<u32>,
+	pub generate_builder: bool,
+	pub builder_postprocess: Option<String>,
+	pub boxed_inline: bool,
+	pub init_function_expression: Option<String>,
+	pub copy_into_function_expression: Option<String>,
+	pub clear_function_expression: Option<String>,
+	pub visibility: Visibility,
+	pub default_value: Option<String>,
+	pub generate_doc: bool,
 }
 
 impl Default for GObject {
 	fn default() -> GObject {
 		GObject {
-			name:"Default".into(),
-			functions:Functions::new(),
-			virtual_methods:VirtualMethods::new(),
-			constants:Constants::new(),
-			signals:Signals::new(),
-			members:Members::new(),
-			properties:Properties::new(),
-			derives:None,
-			status:Default::default(),
-			module_name:None,
-			version:None,
-			cfg_condition:None,
-			type_id:None,
-			final_type:None,
-			fundamental_type:None,
-			exhaustive:false,
-			trait_name:None,
-			child_properties:None,
-			concurrency:Default::default(),
-			ref_mode:None,
-			must_use:false,
-			conversion_type:None,
-			trust_return_value_nullability:false,
-			manual_traits:Vec::default(),
-			align:None,
-			generate_builder:false,
-			builder_postprocess:None,
-			boxed_inline:false,
-			init_function_expression:None,
-			copy_into_function_expression:None,
-			clear_function_expression:None,
-			visibility:Default::default(),
-			default_value:None,
-			generate_doc:true,
+			name: "Default".into(),
+			functions: Functions::new(),
+			virtual_methods: VirtualMethods::new(),
+			constants: Constants::new(),
+			signals: Signals::new(),
+			members: Members::new(),
+			properties: Properties::new(),
+			derives: None,
+			status: Default::default(),
+			module_name: None,
+			version: None,
+			cfg_condition: None,
+			type_id: None,
+			final_type: None,
+			fundamental_type: None,
+			exhaustive: false,
+			trait_name: None,
+			child_properties: None,
+			concurrency: Default::default(),
+			ref_mode: None,
+			must_use: false,
+			conversion_type: None,
+			trust_return_value_nullability: false,
+			manual_traits: Vec::default(),
+			align: None,
+			generate_builder: false,
+			builder_postprocess: None,
+			boxed_inline: false,
+			init_function_expression: None,
+			copy_into_function_expression: None,
+			clear_function_expression: None,
+			visibility: Default::default(),
+			default_value: None,
+			generate_doc: true,
 		}
 	}
 }
@@ -142,28 +148,20 @@ impl Default for GObject {
 pub type GObjects = BTreeMap<String, GObject>;
 
 pub fn parse_toml(
-	toml_objects:&Value,
-	concurrency:library::Concurrency,
-	generate_builder:bool,
-	trust_return_value_nullability:bool,
+	toml_objects: &Value,
+	concurrency: library::Concurrency,
+	generate_builder: bool,
+	trust_return_value_nullability: bool,
 ) -> GObjects {
 	let mut objects = GObjects::new();
 	for toml_object in toml_objects.as_array().unwrap() {
-		let gobject = parse_object(
-			toml_object,
-			concurrency,
-			generate_builder,
-			trust_return_value_nullability,
-		);
+		let gobject = parse_object(toml_object, concurrency, generate_builder, trust_return_value_nullability);
 		objects.insert(gobject.name.clone(), gobject);
 	}
 	objects
 }
 
-pub fn parse_conversion_type(
-	toml:Option<&Value>,
-	object_name:&str,
-) -> Option<ConversionType> {
+pub fn parse_conversion_type(toml: Option<&Value>, object_name: &str) -> Option<ConversionType> {
 	use crate::analysis::conversion_type::ConversionType::*;
 
 	let v = toml?;
@@ -177,19 +175,12 @@ pub fn parse_conversion_type(
 				return None;
 			}
 
-			let ok_type = Some(Arc::from(
-				table
-					.get("ok_type")
-					.and_then(Value::as_str)
-					.unwrap_or(object_name),
-			));
+			let ok_type = Some(Arc::from(table.get("ok_type").and_then(Value::as_str).unwrap_or(object_name)));
 			let err_type = table.get("err_type").and_then(Value::as_str);
 
 			(conversion_type.unwrap(), ok_type, err_type)
 		},
-		Value::String(conversion_type) => {
-			(conversion_type.as_str(), None, None)
-		},
+		Value::String(conversion_type) => (conversion_type.as_str(), None, None),
 		_ => {
 			error!("Unexpected toml item for {}.conversion_type", object_name);
 			return None;
@@ -199,10 +190,7 @@ pub fn parse_conversion_type(
 	let get_err_type = || -> Arc<str> {
 		err_type.map_or_else(
 			|| {
-				error!(
-					"Missing `err_type` for {}.conversion_type",
-					object_name
-				);
+				error!("Missing `err_type` for {}.conversion_type", object_name);
 				Arc::from("MissingErrorType")
 			},
 			Arc::from,
@@ -213,32 +201,24 @@ pub fn parse_conversion_type(
 		"direct" => Some(Direct),
 		"scalar" => Some(Scalar),
 		"Option" => Some(Option),
-		"Result" => {
-			Some(Result {
-				ok_type:ok_type.expect("Missing `ok_type`"),
-				err_type:get_err_type(),
-			})
-		},
+		"Result" => Some(Result { ok_type: ok_type.expect("Missing `ok_type`"), err_type: get_err_type() }),
 		"pointer" => Some(Pointer),
 		"borrow" => Some(Borrow),
 		"unknown" => Some(Unknown),
 		unexpected => {
-			error!(
-				"Unexpected {} for {}.conversion_type",
-				unexpected, object_name
-			);
+			error!("Unexpected {} for {}.conversion_type", unexpected, object_name);
 			None
 		},
 	}
 }
 
 fn parse_object(
-	toml_object:&Value,
-	concurrency:library::Concurrency,
-	generate_builder:bool,
-	trust_return_value_nullability:bool,
+	toml_object: &Value,
+	concurrency: library::Concurrency,
+	generate_builder: bool,
+	trust_return_value_nullability: bool,
 ) -> GObject {
-	let name:String = toml_object
+	let name: String = toml_object
 		.lookup("name")
 		.expect("Object name not defined")
 		.as_str()
@@ -287,10 +267,7 @@ fn parse_object(
 	);
 
 	let status = match toml_object.lookup("status") {
-		Some(value) => {
-			GStatus::from_str(value.as_str().unwrap())
-				.unwrap_or_else(|_| Default::default())
-		},
+		Some(value) => GStatus::from_str(value.as_str().unwrap()).unwrap_or_else(|_| Default::default()),
 		None => Default::default(),
 	};
 
@@ -302,23 +279,17 @@ fn parse_object(
 			assert!(function_names.insert(name), "{name} already defined!");
 		}
 	}
-	let virtual_methods =
-		VirtualMethods::parse(toml_object.lookup("virtual_method"), &name);
+	let virtual_methods = VirtualMethods::parse(toml_object.lookup("virtual_method"), &name);
 	let mut virtual_methods_names = HashSet::new();
 	for f in &virtual_methods {
 		if let Ident::Name(name) = &f.ident {
-			assert!(
-				virtual_methods_names.insert(name),
-				"{name} already defined!"
-			);
+			assert!(virtual_methods_names.insert(name), "{name} already defined!");
 		}
 	}
 
 	let signals = {
 		let mut v = Vec::new();
-		if let Some(configs) =
-			toml_object.lookup("signal").and_then(Value::as_array)
-		{
+		if let Some(configs) = toml_object.lookup("signal").and_then(Value::as_array) {
 			for config in configs {
 				if let Some(item) = Signal::parse(config, &name, concurrency) {
 					v.push(item);
@@ -330,13 +301,8 @@ fn parse_object(
 	};
 	let members = Members::parse(toml_object.lookup("member"), &name);
 	let properties = Properties::parse(toml_object.lookup("property"), &name);
-	let derives = toml_object
-		.lookup("derive")
-		.map(|derives| Derives::parse(Some(derives), &name));
-	let module_name = toml_object
-		.lookup("module_name")
-		.and_then(Value::as_str)
-		.map(ToOwned::to_owned);
+	let derives = toml_object.lookup("derive").map(|derives| Derives::parse(Some(derives), &name));
+	let module_name = toml_object.lookup("module_name").and_then(Value::as_str).map(ToOwned::to_owned);
 	let version = toml_object
 		.lookup("version")
 		.and_then(Value::as_str)
@@ -350,16 +316,9 @@ fn parse_object(
 		.lookup("final_type")
 		.and_then(Value::as_bool)
 		.or_else(|| generate_trait.map(|t| !t));
-	let fundamental_type =
-		toml_object.lookup("fundamental_type").and_then(Value::as_bool);
-	let exhaustive = toml_object
-		.lookup("exhaustive")
-		.and_then(Value::as_bool)
-		.unwrap_or(false);
-	let trait_name = toml_object
-		.lookup("trait_name")
-		.and_then(Value::as_str)
-		.map(ToOwned::to_owned);
+	let fundamental_type = toml_object.lookup("fundamental_type").and_then(Value::as_bool);
+	let exhaustive = toml_object.lookup("exhaustive").and_then(Value::as_bool).unwrap_or(false);
+	let trait_name = toml_object.lookup("trait_name").and_then(Value::as_str).map(ToOwned::to_owned);
 	let concurrency = toml_object
 		.lookup("concurrency")
 		.and_then(Value::as_str)
@@ -369,13 +328,9 @@ fn parse_object(
 		.lookup("ref_mode")
 		.and_then(Value::as_str)
 		.and_then(|v| v.parse().ok());
-	let conversion_type =
-		parse_conversion_type(toml_object.lookup("conversion_type"), &name);
+	let conversion_type = parse_conversion_type(toml_object.lookup("conversion_type"), &name);
 	let child_properties = ChildProperties::parse(toml_object, &name);
-	let must_use = toml_object
-		.lookup("must_use")
-		.and_then(Value::as_bool)
-		.unwrap_or(false);
+	let must_use = toml_object.lookup("must_use").and_then(Value::as_bool).unwrap_or(false);
 	let trust_return_value_nullability = toml_object
 		.lookup("trust_return_value_nullability")
 		.and_then(Value::as_bool)
@@ -386,28 +341,24 @@ fn parse_object(
 		.flatten()
 		.filter_map(|v| v.as_str().map(String::from))
 		.collect();
-	let align =
-		toml_object.lookup("align").and_then(Value::as_integer).and_then(|v| {
-			if v.count_ones() != 1 || v > i64::from(u32::MAX) || v < 0 {
-				warn!(
-					"`align` configuration must be a power of two of type \
+	let align = toml_object.lookup("align").and_then(Value::as_integer).and_then(|v| {
+		if v.count_ones() != 1 || v > i64::from(u32::MAX) || v < 0 {
+			warn!(
+				"`align` configuration must be a power of two of type \
 					 u32, found {}",
-					v
-				);
-				None
-			} else {
-				Some(v as u32)
-			}
-		});
+				v
+			);
+			None
+		} else {
+			Some(v as u32)
+		}
+	});
 	let generate_builder = toml_object
 		.lookup("generate_builder")
 		.and_then(Value::as_bool)
 		.unwrap_or(generate_builder);
 
-	let boxed_inline = toml_object
-		.lookup("boxed_inline")
-		.and_then(Value::as_bool)
-		.unwrap_or(false);
+	let boxed_inline = toml_object.lookup("boxed_inline").and_then(Value::as_bool).unwrap_or(false);
 
 	let builder_postprocess = toml_object
 		.lookup("builder_postprocess")
@@ -469,11 +420,7 @@ fn parse_object(
 		warn!("ref_mode configuration used for non-manual object {}", name);
 	}
 
-	if status != GStatus::Manual
-		&& !conversion_type
-			.as_ref()
-			.map_or(true, ConversionType::can_use_to_generate)
-	{
+	if status != GStatus::Manual && !conversion_type.as_ref().map_or(true, ConversionType::can_use_to_generate) {
 		warn!(
 			"unexpected conversion_type {:?} configuration used for \
 			 non-manual object {}",
@@ -481,10 +428,7 @@ fn parse_object(
 		);
 	}
 
-	let generate_doc = toml_object
-		.lookup("generate_doc")
-		.and_then(Value::as_bool)
-		.unwrap_or(true);
+	let generate_doc = toml_object.lookup("generate_doc").and_then(Value::as_bool).unwrap_or(true);
 
 	if generate_trait.is_some() {
 		warn!(
@@ -507,7 +451,7 @@ fn parse_object(
 		module_name,
 		version,
 		cfg_condition,
-		type_id:None,
+		type_id: None,
 		final_type,
 		fundamental_type,
 		exhaustive,
@@ -533,11 +477,11 @@ fn parse_object(
 }
 
 pub fn parse_status_shorthands(
-	objects:&mut GObjects,
-	toml:&Value,
-	concurrency:library::Concurrency,
-	generate_builder:bool,
-	trust_return_value_nullability:bool,
+	objects: &mut GObjects,
+	toml: &Value,
+	concurrency: library::Concurrency,
+	generate_builder: bool,
+	trust_return_value_nullability: bool,
 ) {
 	use self::GStatus::*;
 	for &status in &[Manual, Generate, Ignore] {
@@ -553,12 +497,12 @@ pub fn parse_status_shorthands(
 }
 
 fn parse_status_shorthand(
-	objects:&mut GObjects,
-	status:GStatus,
-	toml:&Value,
-	concurrency:library::Concurrency,
-	generate_builder:bool,
-	trust_return_value_nullability:bool,
+	objects: &mut GObjects,
+	status: GStatus,
+	toml: &Value,
+	concurrency: library::Concurrency,
+	generate_builder: bool,
+	trust_return_value_nullability: bool,
 ) {
 	let option_name = format!("options.{status:?}").to_ascii_lowercase();
 	if let Some(a) = toml.lookup(&option_name).map(|a| a.as_array().unwrap()) {
@@ -568,7 +512,7 @@ fn parse_status_shorthand(
 					objects.insert(
 						name.into(),
 						GObject {
-							name:name.into(),
+							name: name.into(),
 							status,
 							concurrency,
 							trust_return_value_nullability,
@@ -585,16 +529,13 @@ fn parse_status_shorthand(
 	}
 }
 
-pub fn resolve_type_ids(objects:&mut GObjects, library:&Library) {
+pub fn resolve_type_ids(objects: &mut GObjects, library: &Library) {
 	let ns = library.namespace(MAIN_NAMESPACE);
 	let global_functions_name = format!("{}.*", ns.name);
 
 	for (name, object) in objects.iter_mut() {
 		let type_id = library.find_type(0, name);
-		if type_id.is_none()
-			&& name != &global_functions_name
-			&& object.status != GStatus::Ignore
-		{
+		if type_id.is_none() && name != &global_functions_name && object.status != GStatus::Ignore {
 			warn!("Configured object `{}` missing from the library", name);
 		} else if object.generate_builder {
 			if let Some(type_id) = type_id {
@@ -617,12 +558,9 @@ pub fn resolve_type_ids(objects:&mut GObjects, library:&Library) {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::{
-		analysis::conversion_type::ConversionType,
-		library::Concurrency,
-	};
+	use crate::{analysis::conversion_type::ConversionType, library::Concurrency};
 
-	fn toml(input:&str) -> ::toml::Value {
+	fn toml(input: &str) -> ::toml::Value {
 		let value = ::toml::from_str(input);
 		assert!(value.is_ok());
 		value.unwrap()
@@ -684,10 +622,7 @@ status = "generate"
 		let object = parse_object(toml, Concurrency::default(), false, false);
 		assert_eq!(
 			object.conversion_type,
-			Some(ConversionType::Result {
-				ok_type:Arc::from("Test"),
-				err_type:Arc::from("MissingErrorType"),
-			}),
+			Some(ConversionType::Result { ok_type: Arc::from("Test"), err_type: Arc::from("MissingErrorType") }),
 		);
 	}
 
@@ -706,10 +641,7 @@ status = "generate"
 		let object = parse_object(toml, Concurrency::default(), false, false);
 		assert_eq!(
 			object.conversion_type,
-			Some(ConversionType::Result {
-				ok_type:Arc::from("Test"),
-				err_type:Arc::from("TryFromIntError"),
-			}),
+			Some(ConversionType::Result { ok_type: Arc::from("Test"), err_type: Arc::from("TryFromIntError") }),
 		);
 	}
 
@@ -729,10 +661,7 @@ status = "generate"
 		let object = parse_object(toml, Concurrency::default(), false, false);
 		assert_eq!(
 			object.conversion_type,
-			Some(ConversionType::Result {
-				ok_type:Arc::from("TestSuccess"),
-				err_type:Arc::from("TryFromIntError"),
-			}),
+			Some(ConversionType::Result { ok_type: Arc::from("TestSuccess"), err_type: Arc::from("TryFromIntError") }),
 		);
 	}
 
@@ -759,18 +688,15 @@ status = "generate"
 		assert_eq!(
 			object["Test"].constants,
 			vec![crate::config::constants::Constant {
-				ident:Ident::Name("Const".to_owned()),
-				status:GStatus::Generate,
-				version:None,
-				cfg_condition:None,
-				generate_doc:true,
+				ident: Ident::Name("Const".to_owned()),
+				status: GStatus::Generate,
+				version: None,
+				cfg_condition: None,
+				generate_doc: true,
 			}],
 		);
 		assert_eq!(object["Test"].functions.len(), 1);
-		assert_eq!(
-			object["Test"].functions[0].ident,
-			Ident::Name("Func".to_owned()),
-		);
+		assert_eq!(object["Test"].functions[0].ident, Ident::Name("Func".to_owned()),);
 	}
 
 	#[test]

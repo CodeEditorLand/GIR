@@ -8,19 +8,13 @@ use crate::{
 	traits::MaybeRef,
 };
 
-pub fn generate(
-	w:&mut dyn Write,
-	env:&Env,
-	analysis:&analysis::record::Info,
-) -> Result<()> {
+pub fn generate(w: &mut dyn Write, env: &Env, analysis: &analysis::record::Info) -> Result<()> {
 	let type_ = analysis.type_(&env.library);
 
 	general::start_comments(w, &env.config)?;
 	general::uses(w, env, &analysis.imports, type_.version)?;
 
-	if RecordType::of(env.type_(analysis.type_id).maybe_ref().unwrap())
-		== RecordType::AutoBoxed
-	{
+	if RecordType::of(env.type_(analysis.type_id).maybe_ref().unwrap()) == RecordType::AutoBoxed {
 		if let Some((ref glib_get_type, _)) = analysis.glib_get_type {
 			general::define_auto_boxed_type(
 				w,
@@ -54,13 +48,10 @@ pub fn generate(
 			&type_.c_type,
 			&ref_fn.glib_name,
 			&unref_fn.glib_name,
-			analysis.glib_get_type.as_ref().map(|(f, v)| {
-				if v > &analysis.version {
-					(f.clone(), *v)
-				} else {
-					(f.clone(), None)
-				}
-			}),
+			analysis
+				.glib_get_type
+				.as_ref()
+				.map(|(f, v)| if v > &analysis.version { (f.clone(), *v) } else { (f.clone(), None) }),
 			&analysis.derives,
 			analysis.visibility,
 			analysis.type_id,
@@ -80,26 +71,19 @@ pub fn generate(
 			&analysis.init_function_expression,
 			&analysis.copy_into_function_expression,
 			&analysis.clear_function_expression,
-			analysis.glib_get_type.as_ref().map(|(f, v)| {
-				if v > &analysis.version {
-					(f.clone(), *v)
-				} else {
-					(f.clone(), None)
-				}
-			}),
+			analysis
+				.glib_get_type
+				.as_ref()
+				.map(|(f, v)| if v > &analysis.version { (f.clone(), *v) } else { (f.clone(), None) }),
 			&analysis.derives,
 			analysis.visibility,
 			analysis.type_id,
 		)?;
 	} else {
-		panic!(
-			"Missing memory management functions for {}",
-			analysis.full_name
-		);
+		panic!("Missing memory management functions for {}", analysis.full_name);
 	}
 
-	if analysis.functions.iter().any(|f| f.status.need_generate() && !f.hidden)
-	{
+	if analysis.functions.iter().any(|f| f.status.need_generate() && !f.hidden) {
 		writeln!(w)?;
 		write!(w, "impl {} {{", analysis.name)?;
 
@@ -120,13 +104,7 @@ pub fn generate(
 		writeln!(w, "}}")?;
 	}
 
-	general::declare_default_from_new(
-		w,
-		env,
-		&analysis.name,
-		&analysis.functions,
-		false,
-	)?;
+	general::declare_default_from_new(w, env, &analysis.name, &analysis.functions, false)?;
 
 	trait_impls::generate(
 		w,
@@ -158,24 +136,9 @@ pub fn generate(
 	Ok(())
 }
 
-pub fn generate_reexports(
-	env:&Env,
-	analysis:&analysis::record::Info,
-	module_name:&str,
-	contents:&mut Vec<String>,
-) {
-	let cfg_condition = general::cfg_condition_string(
-		analysis.cfg_condition.as_ref(),
-		false,
-		0,
-	);
-	let version_cfg = general::version_condition_string(
-		env,
-		Some(analysis.type_id.ns_id),
-		analysis.version,
-		false,
-		0,
-	);
+pub fn generate_reexports(env: &Env, analysis: &analysis::record::Info, module_name: &str, contents: &mut Vec<String>) {
+	let cfg_condition = general::cfg_condition_string(analysis.cfg_condition.as_ref(), false, 0);
+	let version_cfg = general::version_condition_string(env, Some(analysis.type_id.ns_id), analysis.version, false, 0);
 	let mut cfg = String::new();
 	if let Some(s) = cfg_condition {
 		cfg.push_str(&s);

@@ -1,83 +1,37 @@
 use std::io::{Result, Write};
 
 use crate::{
+	Env,
 	analysis::{
 		functions::Info,
 		special_functions::{Infos, Type},
 	},
 	codegen::general::{cfg_condition_no_doc, version_condition},
 	version::Version,
-	Env,
 };
 
 pub fn generate(
-	w:&mut dyn Write,
-	env:&Env,
-	type_name:&str,
-	functions:&[Info],
-	specials:&Infos,
-	trait_name:Option<&str>,
-	scope_version:Option<Version>,
-	cfg_condition:Option<&str>,
+	w: &mut dyn Write,
+	env: &Env,
+	type_name: &str,
+	functions: &[Info],
+	specials: &Infos,
+	trait_name: Option<&str>,
+	scope_version: Option<Version>,
+	cfg_condition: Option<&str>,
 ) -> Result<()> {
 	for (type_, special_info) in specials.traits().iter() {
 		if let Some(info) = lookup(functions, &special_info.glib_name) {
 			match type_ {
 				Type::Compare => {
 					if !specials.has_trait(Type::Equal) {
-						generate_eq_compare(
-							w,
-							env,
-							type_name,
-							info,
-							trait_name,
-							scope_version,
-							cfg_condition,
-						)?;
+						generate_eq_compare(w, env, type_name, info, trait_name, scope_version, cfg_condition)?;
 					}
-					generate_ord(
-						w,
-						env,
-						type_name,
-						info,
-						trait_name,
-						scope_version,
-						cfg_condition,
-					)?;
+					generate_ord(w, env, type_name, info, trait_name, scope_version, cfg_condition)?;
 				},
-				Type::Equal => {
-					generate_eq(
-						w,
-						env,
-						type_name,
-						info,
-						trait_name,
-						scope_version,
-						cfg_condition,
-					)?
-				},
-				Type::Display => {
-					generate_display(
-						w,
-						env,
-						type_name,
-						info,
-						trait_name,
-						scope_version,
-						cfg_condition,
-					)?
-				},
-				Type::Hash => {
-					generate_hash(
-						w,
-						env,
-						type_name,
-						info,
-						trait_name,
-						scope_version,
-						cfg_condition,
-					)?
-				},
+				Type::Equal => generate_eq(w, env, type_name, info, trait_name, scope_version, cfg_condition)?,
+				Type::Display => generate_display(w, env, type_name, info, trait_name, scope_version, cfg_condition)?,
+				Type::Hash => generate_hash(w, env, type_name, info, trait_name, scope_version, cfg_condition)?,
 				_ => {},
 			}
 		}
@@ -85,15 +39,11 @@ pub fn generate(
 	Ok(())
 }
 
-fn lookup<'a>(functions:&'a [Info], name:&str) -> Option<&'a Info> {
+fn lookup<'a>(functions: &'a [Info], name: &str) -> Option<&'a Info> {
 	functions.iter().find(|f| !f.status.ignored() && f.glib_name == name)
 }
 
-fn generate_call(
-	func_name:&str,
-	args:&[&str],
-	trait_name:Option<&str>,
-) -> String {
+fn generate_call(func_name: &str, args: &[&str], trait_name: Option<&str>) -> String {
 	let mut args_string = String::new();
 	let in_trait = trait_name.is_some();
 
@@ -116,13 +66,13 @@ fn generate_call(
 }
 
 fn generate_display(
-	w:&mut dyn Write,
-	env:&Env,
-	type_name:&str,
-	func:&Info,
-	trait_name:Option<&str>,
-	scope_version:Option<Version>,
-	cfg_condition:Option<&str>,
+	w: &mut dyn Write,
+	env: &Env,
+	type_name: &str,
+	func: &Info,
+	trait_name: Option<&str>,
+	scope_version: Option<Version>,
+	cfg_condition: Option<&str>,
 ) -> Result<()> {
 	use crate::analysis::out_parameters::Mode;
 
@@ -158,13 +108,13 @@ impl std::fmt::Display for {type_name} {{
 }
 
 fn generate_hash(
-	w:&mut dyn Write,
-	env:&Env,
-	type_name:&str,
-	func:&Info,
-	trait_name:Option<&str>,
-	scope_version:Option<Version>,
-	cfg_condition:Option<&str>,
+	w: &mut dyn Write,
+	env: &Env,
+	type_name: &str,
+	func: &Info,
+	trait_name: Option<&str>,
+	scope_version: Option<Version>,
+	cfg_condition: Option<&str>,
 ) -> Result<()> {
 	writeln!(w)?;
 	let version = Version::if_stricter_than(func.version, scope_version);
@@ -186,13 +136,13 @@ impl std::hash::Hash for {type_name} {{
 }
 
 fn generate_eq(
-	w:&mut dyn Write,
-	env:&Env,
-	type_name:&str,
-	func:&Info,
-	trait_name:Option<&str>,
-	scope_version:Option<Version>,
-	cfg_condition:Option<&str>,
+	w: &mut dyn Write,
+	env: &Env,
+	type_name: &str,
+	func: &Info,
+	trait_name: Option<&str>,
+	scope_version: Option<Version>,
+	cfg_condition: Option<&str>,
 ) -> Result<()> {
 	writeln!(w)?;
 	let version = Version::if_stricter_than(func.version, scope_version);
@@ -216,13 +166,13 @@ impl Eq for {type_name} {{}}"
 }
 
 fn generate_eq_compare(
-	w:&mut dyn Write,
-	env:&Env,
-	type_name:&str,
-	func:&Info,
-	trait_name:Option<&str>,
-	scope_version:Option<Version>,
-	cfg_condition:Option<&str>,
+	w: &mut dyn Write,
+	env: &Env,
+	type_name: &str,
+	func: &Info,
+	trait_name: Option<&str>,
+	scope_version: Option<Version>,
+	cfg_condition: Option<&str>,
 ) -> Result<()> {
 	writeln!(w)?;
 	let version = Version::if_stricter_than(func.version, scope_version);
@@ -246,13 +196,13 @@ impl Eq for {type_name} {{}}"
 }
 
 fn generate_ord(
-	w:&mut dyn Write,
-	env:&Env,
-	type_name:&str,
-	func:&Info,
-	trait_name:Option<&str>,
-	scope_version:Option<Version>,
-	cfg_condition:Option<&str>,
+	w: &mut dyn Write,
+	env: &Env,
+	type_name: &str,
+	func: &Info,
+	trait_name: Option<&str>,
+	scope_version: Option<Version>,
+	cfg_condition: Option<&str>,
 ) -> Result<()> {
 	writeln!(w)?;
 	let version = Version::if_stricter_than(func.version, scope_version);

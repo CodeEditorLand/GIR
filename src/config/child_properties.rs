@@ -5,17 +5,16 @@ use super::{error::TomlHelper, parsable::Parse};
 
 #[derive(Clone, Debug)]
 pub struct ChildProperty {
-	pub name:String,
-	pub rename_getter:Option<String>,
-	pub type_name:String,
-	pub doc_hidden:bool,
-	pub generate_doc:bool,
+	pub name: String,
+	pub rename_getter: Option<String>,
+	pub type_name: String,
+	pub doc_hidden: bool,
+	pub generate_doc: bool,
 }
 
 impl Parse for ChildProperty {
-	fn parse(toml:&Value, object_name:&str) -> Option<Self> {
-		let name =
-			toml.lookup("name").and_then(Value::as_str).map(ToOwned::to_owned);
+	fn parse(toml: &Value, object_name: &str) -> Option<Self> {
+		let name = toml.lookup("name").and_then(Value::as_str).map(ToOwned::to_owned);
 		let name = if let Some(name) = name {
 			name
 		} else {
@@ -28,27 +27,16 @@ impl Parse for ChildProperty {
 			&format!("child property {object_name}"),
 		);
 
-		let type_name =
-			toml.lookup("type").and_then(Value::as_str).map(ToOwned::to_owned);
+		let type_name = toml.lookup("type").and_then(Value::as_str).map(ToOwned::to_owned);
 		let type_name = if let Some(type_name) = type_name {
 			type_name
 		} else {
-			error!(
-				"No type for child property `{}` for `{}`",
-				name, object_name
-			);
+			error!("No type for child property `{}` for `{}`", name, object_name);
 			return None;
 		};
-		let doc_hidden =
-			toml.lookup("doc_hidden").and_then(Value::as_bool).unwrap_or(false);
-		let rename_getter = toml
-			.lookup("rename_getter")
-			.and_then(Value::as_str)
-			.map(ToOwned::to_owned);
-		let generate_doc = toml
-			.lookup("generate_doc")
-			.and_then(Value::as_bool)
-			.unwrap_or(true);
+		let doc_hidden = toml.lookup("doc_hidden").and_then(Value::as_bool).unwrap_or(false);
+		let rename_getter = toml.lookup("rename_getter").and_then(Value::as_str).map(ToOwned::to_owned);
+		let generate_doc = toml.lookup("generate_doc").and_then(Value::as_bool).unwrap_or(true);
 
 		Some(Self { name, rename_getter, type_name, doc_hidden, generate_doc })
 	}
@@ -56,25 +44,17 @@ impl Parse for ChildProperty {
 
 #[derive(Clone, Debug)]
 pub struct ChildProperties {
-	pub child_name:Option<String>,
-	pub child_type:Option<String>,
-	pub properties:Vec<ChildProperty>,
+	pub child_name: Option<String>,
+	pub child_type: Option<String>,
+	pub properties: Vec<ChildProperty>,
 }
 
 impl Parse for ChildProperties {
-	fn parse(toml_object:&Value, object_name:&str) -> Option<Self> {
-		let child_name = toml_object
-			.lookup("child_name")
-			.and_then(Value::as_str)
-			.map(ToOwned::to_owned);
-		let child_type = toml_object
-			.lookup("child_type")
-			.and_then(Value::as_str)
-			.map(ToOwned::to_owned);
-		let mut properties:Vec<ChildProperty> = Vec::new();
-		if let Some(configs) =
-			toml_object.lookup("child_prop").and_then(Value::as_array)
-		{
+	fn parse(toml_object: &Value, object_name: &str) -> Option<Self> {
+		let child_name = toml_object.lookup("child_name").and_then(Value::as_str).map(ToOwned::to_owned);
+		let child_type = toml_object.lookup("child_type").and_then(Value::as_str).map(ToOwned::to_owned);
+		let mut properties: Vec<ChildProperty> = Vec::new();
+		if let Some(configs) = toml_object.lookup("child_prop").and_then(Value::as_array) {
 			for config in configs {
 				if let Some(item) = ChildProperty::parse(config, object_name) {
 					properties.push(item);
@@ -100,7 +80,7 @@ impl Parse for ChildProperties {
 mod tests {
 	use super::{super::parsable::Parse, *};
 
-	fn toml(input:&str) -> ::toml::Value {
+	fn toml(input: &str) -> ::toml::Value {
 		let value = ::toml::from_str(input);
 		assert!(value.is_ok());
 		value.unwrap()

@@ -1,93 +1,88 @@
 use log::error;
 
-use super::{
-	conversion_type::ConversionType,
-	ref_mode::RefMode,
-	try_from_glib::TryFromGlib,
-};
+use super::{conversion_type::ConversionType, ref_mode::RefMode, try_from_glib::TryFromGlib};
 pub use crate::config::signals::TransformationType;
 use crate::{
 	analysis::{is_gpointer, rust_type::RustType},
 	config::{self, parameter_matchable::ParameterMatchable},
 	env::Env,
-	library,
-	nameutil,
+	library, nameutil,
 };
 
 #[derive(Clone, Debug)]
 pub struct RustParameter {
-	pub name:String,
-	pub typ:library::TypeId,
-	pub direction:library::ParameterDirection,
-	pub nullable:library::Nullable,
-	pub ref_mode:RefMode,
-	pub try_from_glib:TryFromGlib,
+	pub name: String,
+	pub typ: library::TypeId,
+	pub direction: library::ParameterDirection,
+	pub nullable: library::Nullable,
+	pub ref_mode: RefMode,
+	pub try_from_glib: TryFromGlib,
 }
 
 #[derive(Clone, Debug)]
 pub struct CParameter {
-	pub name:String,
-	pub typ:library::TypeId,
-	pub c_type:String,
+	pub name: String,
+	pub typ: library::TypeId,
+	pub c_type: String,
 }
 
 impl CParameter {
-	pub fn is_real_gpointer(&self, env:&Env) -> bool {
+	pub fn is_real_gpointer(&self, env: &Env) -> bool {
 		is_gpointer(&self.c_type) && RustType::try_new(env, self.typ).is_err()
 	}
 }
 
 #[derive(Clone, Debug)]
 pub struct Transformation {
-	pub ind_c:usize,    // index in `Vec<CParameter>`
-	pub ind_rust:usize, // index in `Vec<RustParameter>`
-	pub transformation:TransformationType,
-	pub name:String,
-	pub typ:library::TypeId,
-	pub transfer:library::Transfer,
-	pub ref_mode:RefMode,
-	pub conversion_type:ConversionType,
+	pub ind_c: usize,    // index in `Vec<CParameter>`
+	pub ind_rust: usize, // index in `Vec<RustParameter>`
+	pub transformation: TransformationType,
+	pub name: String,
+	pub typ: library::TypeId,
+	pub transfer: library::Transfer,
+	pub ref_mode: RefMode,
+	pub conversion_type: ConversionType,
 }
 
 #[derive(Clone, Default, Debug)]
 pub struct Parameters {
-	pub rust_parameters:Vec<RustParameter>,
-	pub c_parameters:Vec<CParameter>,
-	pub transformations:Vec<Transformation>,
+	pub rust_parameters: Vec<RustParameter>,
+	pub c_parameters: Vec<CParameter>,
+	pub transformations: Vec<Transformation>,
 }
 
 impl Parameters {
-	pub fn new(capacity:usize) -> Self {
+	pub fn new(capacity: usize) -> Self {
 		Self {
-			rust_parameters:Vec::with_capacity(capacity),
-			c_parameters:Vec::with_capacity(capacity),
-			transformations:Vec::with_capacity(capacity),
+			rust_parameters: Vec::with_capacity(capacity),
+			c_parameters: Vec::with_capacity(capacity),
+			transformations: Vec::with_capacity(capacity),
 		}
 	}
 
 	pub fn prepare_transformation(
 		&mut self,
-		env:&Env,
-		type_tid:library::TypeId,
-		name:String,
-		c_type:String,
-		direction:library::ParameterDirection,
-		transfer:library::Transfer,
-		nullable:library::Nullable,
-		ref_mode:RefMode,
-		conversion_type:ConversionType,
+		env: &Env,
+		type_tid: library::TypeId,
+		name: String,
+		c_type: String,
+		direction: library::ParameterDirection,
+		transfer: library::Transfer,
+		nullable: library::Nullable,
+		ref_mode: RefMode,
+		conversion_type: ConversionType,
 	) -> Transformation {
-		let c_par = CParameter { name:name.clone(), typ:type_tid, c_type };
+		let c_par = CParameter { name: name.clone(), typ: type_tid, c_type };
 		let ind_c = self.c_parameters.len();
 		self.c_parameters.push(c_par);
 
 		let rust_par = RustParameter {
-			name:name.clone(),
-			typ:type_tid,
+			name: name.clone(),
+			typ: type_tid,
 			direction,
 			nullable,
 			ref_mode,
-			try_from_glib:TryFromGlib::from_type_defaults(env, type_tid),
+			try_from_glib: TryFromGlib::from_type_defaults(env, type_tid),
 		};
 		let ind_rust = self.rust_parameters.len();
 		self.rust_parameters.push(rust_par);
@@ -95,26 +90,26 @@ impl Parameters {
 		Transformation {
 			ind_c,
 			ind_rust,
-			transformation:TransformationType::None,
+			transformation: TransformationType::None,
 			name,
-			typ:type_tid,
+			typ: type_tid,
 			transfer,
 			ref_mode,
 			conversion_type,
 		}
 	}
 
-	pub fn get(&self, ind_rust:usize) -> Option<&Transformation> {
+	pub fn get(&self, ind_rust: usize) -> Option<&Transformation> {
 		self.transformations.iter().find(|tr| tr.ind_rust == ind_rust)
 	}
 }
 
 pub fn analyze(
-	env:&Env,
-	signal_parameters:&[library::Parameter],
-	type_tid:library::TypeId,
-	configured_signals:&[&config::signals::Signal],
-	callback_parameters_config:Option<&config::functions::CallbackParameters>,
+	env: &Env,
+	signal_parameters: &[library::Parameter],
+	type_tid: library::TypeId,
+	configured_signals: &[&config::signals::Signal],
+	callback_parameters_config: Option<&config::functions::CallbackParameters>,
 ) -> Parameters {
 	let mut parameters = Parameters::new(signal_parameters.len() + 1);
 
@@ -144,11 +139,8 @@ pub fn analyze(
 			.iter()
 			.find_map(|p| p.nullable)
 			.or_else(|| {
-				callback_parameters_config.and_then(|cp| {
-					cp.iter()
-						.find(|cp| cp.ident.is_match(&par.name))
-						.and_then(|c| c.nullable)
-				})
+				callback_parameters_config
+					.and_then(|cp| cp.iter().find(|cp| cp.ident.is_match(&par.name)).and_then(|c| c.nullable))
 			});
 		let nullable = nullable_override.unwrap_or(par.nullable);
 
@@ -188,12 +180,7 @@ pub fn analyze(
 		}
 
 		if let Some(transformation_type) = transformation_override {
-			apply_transformation_type(
-				env,
-				&mut parameters,
-				&mut transform,
-				transformation_type,
-			);
+			apply_transformation_type(env, &mut parameters, &mut transform, transformation_type);
 		}
 		parameters.transformations.push(transform);
 	}
@@ -202,10 +189,10 @@ pub fn analyze(
 }
 
 fn apply_transformation_type(
-	env:&Env,
-	parameters:&mut Parameters,
-	transform:&mut Transformation,
-	transformation_type:TransformationType,
+	env: &Env,
+	parameters: &mut Parameters,
+	transform: &mut Transformation,
+	transformation_type: TransformationType,
 ) {
 	transform.transformation = transformation_type;
 	match transformation_type {
@@ -223,13 +210,10 @@ fn apply_transformation_type(
 		TransformationType::TreePath => {
 			let type_ = env.type_(transform.typ);
 			if let library::Type::Basic(library::Basic::Utf8) = type_ {
-				if let Some(type_tid) = env.library.find_type(0, "Gtk.TreePath")
-				{
+				if let Some(type_tid) = env.library.find_type(0, "Gtk.TreePath") {
 					transform.typ = type_tid;
 					transform.conversion_type = ConversionType::Direct;
-					if let Some(rust_par) =
-						parameters.rust_parameters.get_mut(transform.ind_rust)
-					{
+					if let Some(rust_par) = parameters.rust_parameters.get_mut(transform.ind_rust) {
 						rust_par.typ = type_tid;
 						rust_par.ref_mode = RefMode::None;
 					}
@@ -240,10 +224,7 @@ fn apply_transformation_type(
 					);
 				}
 			} else {
-				error!(
-					"Wrong parameter type for treepath transformation {:?}",
-					transform.typ
-				);
+				error!("Wrong parameter type for treepath transformation {:?}", transform.typ);
 			}
 		},
 	}

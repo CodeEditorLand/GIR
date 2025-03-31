@@ -8,7 +8,7 @@ use std::{
 pub struct Version(u16, u16, u16, bool);
 
 impl Version {
-	pub fn new(major:u16, minor:u16, patch:u16) -> Self {
+	pub fn new(major: u16, minor: u16, patch: u16) -> Self {
 		Self(major, minor, patch, true)
 	}
 
@@ -19,7 +19,7 @@ impl Version {
 	/// the crate name from where the super-type originates from in case it
 	/// is different from the main crate. For those cases you can pass
 	/// the crate name as the `prefix` parameter
-	pub fn to_cfg(self, prefix:Option<&str>) -> String {
+	pub fn to_cfg(self, prefix: Option<&str>) -> String {
 		if self.3 {
 			if let Some(p) = prefix {
 				format!("feature = \"{}_{}\"", p, self.to_feature())
@@ -33,7 +33,9 @@ impl Version {
 		}
 	}
 
-	pub fn as_opposite(&mut self) { self.3 = !self.3; }
+	pub fn as_opposite(&mut self) {
+		self.3 = !self.3;
+	}
 
 	pub fn to_feature(self) -> String {
 		match self {
@@ -45,16 +47,9 @@ impl Version {
 
 	/// Returns `inner_version` if it is stricter than `outer_version`, `None`
 	/// otherwise
-	pub fn if_stricter_than(
-		inner_version:Option<Self>,
-		outer_version:Option<Self>,
-	) -> Option<Self> {
+	pub fn if_stricter_than(inner_version: Option<Self>, outer_version: Option<Self>) -> Option<Self> {
 		match (inner_version, outer_version) {
-			(Some(inner_version), Some(outer_version))
-				if inner_version <= outer_version =>
-			{
-				None
-			},
+			(Some(inner_version), Some(outer_version)) if inner_version <= outer_version => None,
 			(inner_version, _) => inner_version,
 		}
 	}
@@ -65,13 +60,9 @@ impl FromStr for Version {
 
 	/// Parse a `Version` from a string.
 	/// Currently always return Ok
-	fn from_str(s:&str) -> Result<Self, String> {
+	fn from_str(s: &str) -> Result<Self, String> {
 		if s.contains('.') {
-			let mut parts = s
-				.splitn(4, '.')
-				.map(str::parse)
-				.take_while(Result::is_ok)
-				.map(Result::unwrap);
+			let mut parts = s.splitn(4, '.').map(str::parse).take_while(Result::is_ok).map(Result::unwrap);
 			Ok(Self::new(
 				parts.next().unwrap_or(0),
 				parts.next().unwrap_or(0),
@@ -85,7 +76,7 @@ impl FromStr for Version {
 }
 
 impl Display for Version {
-	fn fmt(&self, f:&mut Formatter<'_>) -> Result<(), fmt::Error> {
+	fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
 		match *self {
 			Self(major, 0, 0, _) => write!(f, "{major}"),
 			Self(major, minor, 0, _) => write!(f, "{major}.{minor}"),

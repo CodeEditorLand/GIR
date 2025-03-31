@@ -3,15 +3,17 @@ use std::io::{Result, Write};
 use super::TAB;
 
 pub struct Untabber {
-	orig:Box<dyn Write>,
+	orig: Box<dyn Write>,
 }
 
 impl Untabber {
-	pub fn new(orig:Box<dyn Write>) -> Self { Self { orig } }
+	pub fn new(orig: Box<dyn Write>) -> Self {
+		Self { orig }
+	}
 }
 
 impl Write for Untabber {
-	fn write(&mut self, buf:&[u8]) -> Result<usize> {
+	fn write(&mut self, buf: &[u8]) -> Result<usize> {
 		let mut chunks = buf.split(|b| b == &b'\t').peekable();
 		while let Some(chunk) = chunks.next() {
 			self.orig.write_all(chunk)?;
@@ -24,5 +26,7 @@ impl Write for Untabber {
 		Ok(buf.len())
 	}
 
-	fn flush(&mut self) -> Result<()> { self.orig.flush() }
+	fn flush(&mut self) -> Result<()> {
+		self.orig.flush()
+	}
 }

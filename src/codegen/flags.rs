@@ -1,5 +1,5 @@
 use std::{
-	io::{prelude::*, Result},
+	io::{Result, prelude::*},
 	path::Path,
 };
 
@@ -8,17 +8,8 @@ use crate::{
 	analysis::flags::Info,
 	codegen::{
 		general::{
-			self,
-			cfg_condition,
-			cfg_condition_doc,
-			cfg_condition_no_doc,
-			cfg_condition_string,
-			cfg_deprecated,
-			derives,
-			doc_alias,
-			version_condition,
-			version_condition_doc,
-			version_condition_no_doc,
+			self, cfg_condition, cfg_condition_doc, cfg_condition_no_doc, cfg_condition_string, cfg_deprecated,
+			derives, doc_alias, version_condition, version_condition_doc, version_condition_no_doc,
 			version_condition_string,
 		},
 		generate_default_impl,
@@ -31,7 +22,7 @@ use crate::{
 	traits::*,
 };
 
-pub fn generate(env:&Env, root_path:&Path, mod_rs:&mut Vec<String>) {
+pub fn generate(env: &Env, root_path: &Path, mod_rs: &mut Vec<String>) {
 	if !env
 		.analysis
 		.flags
@@ -55,22 +46,15 @@ pub fn generate(env:&Env, root_path:&Path, mod_rs:&mut Vec<String>) {
 			}
 			let flags = flags_analysis.type_(&env.library);
 
-			if let Some(cfg) =
-				version_condition_string(env, None, flags.version, false, 0)
-			{
+			if let Some(cfg) = version_condition_string(env, None, flags.version, false, 0) {
 				mod_rs.push(cfg);
 			}
-			if let Some(cfg) =
-				cfg_condition_string(config.cfg_condition.as_ref(), false, 0)
-			{
+			if let Some(cfg) = cfg_condition_string(config.cfg_condition.as_ref(), false, 0) {
 				mod_rs.push(cfg);
 			}
 			mod_rs.push(format!(
 				"{}{} use self::flags::{};",
-				flags
-					.deprecated_version
-					.map(|_| "#[allow(deprecated)]\n")
-					.unwrap_or(""),
+				flags.deprecated_version.map(|_| "#[allow(deprecated)]\n").unwrap_or(""),
 				flags_analysis.visibility.export_visibility(),
 				flags.name
 			));
@@ -81,27 +65,14 @@ pub fn generate(env:&Env, root_path:&Path, mod_rs:&mut Vec<String>) {
 	});
 }
 
-fn generate_flags(
-	env:&Env,
-	w:&mut dyn Write,
-	flags:&Bitfield,
-	config:&GObject,
-	analysis:&Info,
-) -> Result<()> {
+fn generate_flags(env: &Env, w: &mut dyn Write, flags: &Bitfield, config: &GObject, analysis: &Info) -> Result<()> {
 	let sys_crate_name = env.sys_crate_import(analysis.type_id);
 	cfg_condition_no_doc(w, config.cfg_condition.as_ref(), false, 0)?;
 	version_condition_no_doc(w, env, None, flags.version, false, 0)?;
 	writeln!(w, "bitflags! {{")?;
 	cfg_condition_doc(w, config.cfg_condition.as_ref(), false, 1)?;
 	version_condition_doc(w, env, flags.version, false, 1)?;
-	cfg_deprecated(
-		w,
-		env,
-		Some(analysis.type_id),
-		flags.deprecated_version,
-		false,
-		1,
-	)?;
+	cfg_deprecated(w, env, Some(analysis.type_id), flags.deprecated_version, false, 1)?;
 	if config.must_use {
 		writeln!(w, "    #[must_use]")?;
 	}
@@ -124,28 +95,15 @@ fn generate_flags(
 			.iter()
 			.find_map(|m| m.deprecated_version)
 			.or(member.deprecated_version);
-		let version =
-			member_config.iter().find_map(|m| m.version).or(member.version);
-		let cfg_cond =
-			member_config.iter().find_map(|m| m.cfg_condition.as_ref());
-		cfg_deprecated(
-			w,
-			env,
-			Some(analysis.type_id),
-			deprecated_version,
-			false,
-			2,
-		)?;
+		let version = member_config.iter().find_map(|m| m.version).or(member.version);
+		let cfg_cond = member_config.iter().find_map(|m| m.cfg_condition.as_ref());
+		cfg_deprecated(w, env, Some(analysis.type_id), deprecated_version, false, 2)?;
 		version_condition(w, env, None, version, false, 2)?;
 		cfg_condition(w, cfg_cond, false, 2)?;
 		if member.c_identifier != member.name {
 			doc_alias(w, &member.c_identifier, "", 2)?;
 		}
-		writeln!(
-			w,
-			"\t\tconst {} = {}::{} as _;",
-			name, sys_crate_name, member.c_identifier,
-		)?;
+		writeln!(w, "\t\tconst {} = {}::{} as _;", name, sys_crate_name, member.c_identifier,)?;
 	}
 
 	writeln!(
@@ -195,25 +153,15 @@ fn generate_flags(
 
 	writeln!(w)?;
 
-	generate_default_impl(
-		w,
-		env,
-		config,
-		&flags.name,
-		flags.version,
-		flags.members.iter(),
-		|member| {
-			let member_config = config.members.matched(&member.name);
-			if member.status.ignored() {
-				return None;
-			}
-			let version =
-				member_config.iter().find_map(|m| m.version).or(member.version);
-			let cfg_cond =
-				member_config.iter().find_map(|m| m.cfg_condition.as_ref());
-			Some((version, cfg_cond, bitfield_member_name(&member.name)))
-		},
-	)?;
+	generate_default_impl(w, env, config, &flags.name, flags.version, flags.members.iter(), |member| {
+		let member_config = config.members.matched(&member.name);
+		if member.status.ignored() {
+			return None;
+		}
+		let version = member_config.iter().find_map(|m| m.version).or(member.version);
+		let cfg_cond = member_config.iter().find_map(|m| m.cfg_condition.as_ref());
+		Some((version, cfg_cond, bitfield_member_name(&member.name)))
+	})?;
 
 	version_condition(w, env, None, flags.version, false, 0)?;
 	cfg_condition_no_doc(w, config.cfg_condition.as_ref(), false, 0)?;
@@ -339,8 +287,7 @@ impl FromGlib<{sys_crate_name}::{ffi_name}> for {name} {{
 			name = flags.name,
 			glib = use_glib_type(env, "gobject_ffi::g_value_get_flags"),
 			gvalue = use_glib_type(env, "Value"),
-			genericwrongvaluetypechecker =
-				use_glib_type(env, "value::GenericValueTypeChecker"),
+			genericwrongvaluetypechecker = use_glib_type(env, "value::GenericValueTypeChecker"),
 			assert = assert,
 			from_value_type = use_glib_type(env, "value::FromValue"),
 		)?;

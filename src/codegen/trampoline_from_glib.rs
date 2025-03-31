@@ -7,21 +7,11 @@ use crate::{
 };
 
 pub trait TrampolineFromGlib {
-	fn trampoline_from_glib(
-		&self,
-		env:&Env,
-		need_downcast:bool,
-		nullable:bool,
-	) -> String;
+	fn trampoline_from_glib(&self, env: &Env, need_downcast: bool, nullable: bool) -> String;
 }
 
 impl TrampolineFromGlib for Transformation {
-	fn trampoline_from_glib(
-		&self,
-		env:&Env,
-		need_downcast:bool,
-		nullable:bool,
-	) -> String {
+	fn trampoline_from_glib(&self, env: &Env, need_downcast: bool, nullable: bool) -> String {
 		use crate::analysis::conversion_type::ConversionType::*;
 		let need_type_name = need_downcast || is_need_type_name(env, self.typ);
 		match self.conversion_type {
@@ -32,8 +22,7 @@ impl TrampolineFromGlib for Transformation {
 			Borrow | Pointer => {
 				let is_borrow = self.conversion_type == Borrow;
 				let need_type_name = need_type_name || (is_borrow && nullable);
-				let (mut left, mut right) =
-					from_glib_xxx(self.transfer, is_borrow);
+				let (mut left, mut right) = from_glib_xxx(self.transfer, is_borrow);
 				let type_name = RustType::try_new(env, self.typ).into_string();
 				if need_type_name {
 					if is_borrow && nullable {
@@ -44,16 +33,10 @@ impl TrampolineFromGlib for Transformation {
 				}
 
 				if !nullable {
-					left = format!(
-						"{}{}",
-						if need_downcast && is_borrow { "" } else { "&" },
-						left
-					);
+					left = format!("{}{}", if need_downcast && is_borrow { "" } else { "&" }, left);
 				} else if nullable && is_borrow {
 					if is_gstring(&type_name) {
-						right = format!(
-							"{right}.as_ref().as_ref().map(|s| s.as_str())"
-						);
+						right = format!("{right}.as_ref().as_ref().map(|s| s.as_str())");
 					} else {
 						right = format!("{right}.as_ref().as_ref()");
 					}
@@ -76,10 +59,7 @@ impl TrampolineFromGlib for Transformation {
 	}
 }
 
-pub fn from_glib_xxx(
-	transfer:library::Transfer,
-	is_borrow:bool,
-) -> (String, String) {
+pub fn from_glib_xxx(transfer: library::Transfer, is_borrow: bool) -> (String, String) {
 	use crate::library::Transfer::*;
 	match transfer {
 		None if is_borrow => ("from_glib_borrow(".into(), ")".into()),
@@ -89,7 +69,7 @@ pub fn from_glib_xxx(
 	}
 }
 
-fn is_need_type_name(env:&Env, type_id:library::TypeId) -> bool {
+fn is_need_type_name(env: &Env, type_id: library::TypeId) -> bool {
 	if type_id.ns_id == library::INTERNAL_NAMESPACE {
 		use crate::library::{Basic::*, Type::*};
 		matches!(env.type_(type_id), Basic(Utf8 | Filename | OsString))

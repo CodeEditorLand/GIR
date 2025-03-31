@@ -28,12 +28,7 @@ impl TranslateToGlib for TransformationType {
 				move_,
 				..
 			} => {
-				let (left, right) = to_glib_xxx(
-					transfer,
-					ref_mode,
-					explicit_target_type,
-					move_,
-				);
+				let (left, right) = to_glib_xxx(transfer, ref_mode, explicit_target_type, move_);
 
 				if instance_parameter {
 					format!(
@@ -59,33 +54,27 @@ impl TranslateToGlib for TransformationType {
 }
 
 fn to_glib_xxx(
-	transfer:Transfer,
-	ref_mode:RefMode,
-	explicit_target_type:&str,
-	move_:bool,
+	transfer: Transfer,
+	ref_mode: RefMode,
+	explicit_target_type: &str,
+	move_: bool,
 ) -> (String, &'static str) {
 	use self::Transfer::*;
 	match transfer {
 		None => {
 			match ref_mode {
-                RefMode::None => (String::new(), ".to_glib_none_mut().0"), // unreachable!(),
-                RefMode::ByRef => match (move_, explicit_target_type.is_empty()) {
-                    (true, true) => (String::new(), ".into_glib_ptr()"),
-                    (true, false) => (
-                        format!("ToGlibPtr::<{explicit_target_type}>::into_glib_ptr("),
-                        ")",
-                    ),
-                    (false, true) => (String::new(), ".to_glib_none().0"),
-                    (false, false) => (
-                        format!("ToGlibPtr::<{explicit_target_type}>::to_glib_none("),
-                        ").0",
-                    ),
-                },
-                RefMode::ByRefMut => (String::new(), ".to_glib_none_mut().0"),
-                RefMode::ByRefImmut => ("mut_override(".into(), ".to_glib_none().0)"),
-                RefMode::ByRefConst => ("const_override(".into(), ".to_glib_none().0)"),
-                RefMode::ByRefFake => (String::new(), ""), // unreachable!(),
-            }
+				RefMode::None => (String::new(), ".to_glib_none_mut().0"), // unreachable!(),
+				RefMode::ByRef => match (move_, explicit_target_type.is_empty()) {
+					(true, true) => (String::new(), ".into_glib_ptr()"),
+					(true, false) => (format!("ToGlibPtr::<{explicit_target_type}>::into_glib_ptr("), ")"),
+					(false, true) => (String::new(), ".to_glib_none().0"),
+					(false, false) => (format!("ToGlibPtr::<{explicit_target_type}>::to_glib_none("), ").0"),
+				},
+				RefMode::ByRefMut => (String::new(), ".to_glib_none_mut().0"),
+				RefMode::ByRefImmut => ("mut_override(".into(), ".to_glib_none().0)"),
+				RefMode::ByRefConst => ("const_override(".into(), ".to_glib_none().0)"),
+				RefMode::ByRefFake => (String::new(), ""), // unreachable!(),
+			}
 		},
 		Full => {
 			if move_ {

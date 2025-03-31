@@ -10,16 +10,16 @@ use crate::{
 	env::Env,
 	library,
 	traits::IntoString,
-	writer::{primitives::tabs, ToCode},
+	writer::{ToCode, primitives::tabs},
 };
 
 pub fn generate(
-	w:&mut dyn Write,
-	env:&Env,
-	prop:&Property,
-	in_trait:bool,
-	only_declaration:bool,
-	indent:usize,
+	w: &mut dyn Write,
+	env: &Env,
+	prop: &Property,
+	in_trait: bool,
+	only_declaration: bool,
+	indent: usize,
 ) -> Result<()> {
 	generate_prop_func(w, env, prop, in_trait, only_declaration, indent)?;
 
@@ -27,12 +27,12 @@ pub fn generate(
 }
 
 fn generate_prop_func(
-	w:&mut dyn Write,
-	env:&Env,
-	prop:&Property,
-	in_trait:bool,
-	only_declaration:bool,
-	indent:usize,
+	w: &mut dyn Write,
+	env: &Env,
+	prop: &Property,
+	in_trait: bool,
+	only_declaration: bool,
+	indent: usize,
 ) -> Result<()> {
 	let pub_prefix = if in_trait { "" } else { "pub " };
 	let decl_suffix = if only_declaration { ";" } else { " {" };
@@ -42,33 +42,17 @@ fn generate_prop_func(
 	writeln!(w)?;
 
 	let decl = declaration(env, prop);
-	cfg_deprecated(
-		w,
-		env,
-		Some(prop.typ),
-		prop.deprecated_version,
-		commented,
-		indent,
-	)?;
+	cfg_deprecated(w, env, Some(prop.typ), prop.deprecated_version, commented, indent)?;
 	version_condition(w, env, None, prop.version, commented, indent)?;
-	let add_doc_alias =
-		if let Some(func_name_alias) = prop.func_name_alias.as_ref() {
-			&prop.name != func_name_alias && prop.name != prop.var_name
-		} else {
-			prop.name != prop.var_name
-		};
+	let add_doc_alias = if let Some(func_name_alias) = prop.func_name_alias.as_ref() {
+		&prop.name != func_name_alias && prop.name != prop.var_name
+	} else {
+		prop.name != prop.var_name
+	};
 	if add_doc_alias {
 		doc_alias(w, &prop.name, comment_prefix, indent)?;
 	}
-	writeln!(
-		w,
-		"{}{}{}{}{}",
-		tabs(indent),
-		comment_prefix,
-		pub_prefix,
-		decl,
-		decl_suffix
-	)?;
+	writeln!(w, "{}{}{}{}{}", tabs(indent), comment_prefix, pub_prefix, decl, decl_suffix)?;
 
 	if !only_declaration {
 		let body = body(env, prop, in_trait).to_code(env);
@@ -80,8 +64,8 @@ fn generate_prop_func(
 	Ok(())
 }
 
-fn declaration(env:&Env, prop:&Property) -> String {
-	let bound:String;
+fn declaration(env: &Env, prop: &Property) -> String {
+	let bound: String;
 	let set_param = if prop.is_get {
 		bound = String::new();
 		String::new()
@@ -114,7 +98,7 @@ fn declaration(env:&Env, prop:&Property) -> String {
 	format!("fn {}{}(&self{}){}", prop.func_name, bound, set_param, return_str)
 }
 
-fn body(env:&Env, prop:&Property, in_trait:bool) -> Chunk {
+fn body(env: &Env, prop: &Property, in_trait: bool) -> Chunk {
 	let mut builder = property_body::Builder::new(env);
 	builder
 		.name(&prop.name)

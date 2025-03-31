@@ -10,7 +10,7 @@ pub enum StringType {
 impl FromStr for StringType {
 	type Err = String;
 
-	fn from_str(s:&str) -> Result<Self, Self::Err> {
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		match s {
 			"utf8" => Ok(Self::Utf8),
 			"filename" => Ok(Self::Filename),

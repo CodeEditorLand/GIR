@@ -23,7 +23,7 @@ pub enum Type {
 impl FromStr for Type {
 	type Err = String;
 
-	fn from_str(s:&str) -> Result<Self, Self::Err> {
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		match s {
 			"compare" => Ok(Self::Compare),
 			"copy" => Ok(Self::Copy),
@@ -40,9 +40,9 @@ impl FromStr for Type {
 
 #[derive(Debug, Clone)]
 pub struct TraitInfo {
-	pub glib_name:String,
-	pub version:Option<Version>,
-	pub first_parameter_mut:bool,
+	pub glib_name: String,
+	pub version: Option<Version>,
+	pub first_parameter_mut: bool,
 }
 
 type TraitInfos = BTreeMap<Type, TraitInfo>;
@@ -54,37 +54,39 @@ pub enum FunctionType {
 
 #[derive(Debug, Clone)]
 pub struct FunctionInfo {
-	pub type_:FunctionType,
-	pub version:Option<Version>,
+	pub type_: FunctionType,
+	pub version: Option<Version>,
 }
 
 type FunctionInfos = BTreeMap<String, FunctionInfo>;
 
 #[derive(Debug, Default)]
 pub struct Infos {
-	traits:TraitInfos,
-	functions:FunctionInfos,
+	traits: TraitInfos,
+	functions: FunctionInfos,
 }
 
 impl Infos {
-	pub fn traits(&self) -> &TraitInfos { &self.traits }
+	pub fn traits(&self) -> &TraitInfos {
+		&self.traits
+	}
 
-	pub fn traits_mut(&mut self) -> &mut TraitInfos { &mut self.traits }
+	pub fn traits_mut(&mut self) -> &mut TraitInfos {
+		&mut self.traits
+	}
 
-	pub fn has_trait(&self, type_:Type) -> bool {
+	pub fn has_trait(&self, type_: Type) -> bool {
 		self.traits.contains_key(&type_)
 	}
 
-	pub fn functions(&self) -> &FunctionInfos { &self.functions }
+	pub fn functions(&self) -> &FunctionInfos {
+		&self.functions
+	}
 }
 
 /// Returns true on functions that take an instance as single argument and
 /// return a string as result.
-fn is_stringify(
-	func:&mut FuncInfo,
-	parent_type:&LibType,
-	obj:&GObject,
-) -> bool {
+fn is_stringify(func: &mut FuncInfo, parent_type: &LibType, obj: &GObject) -> bool {
 	if func.parameters.c_parameters.len() != 1 {
 		return false;
 	}
@@ -112,10 +114,8 @@ fn is_stringify(
 			// Function inside enums and flags have been appropriately marked
 			// in Gir.
 			if !obj.trust_return_value_nullability
-				&& !matches!(
-					parent_type,
-					LibType::Enumeration(_) | LibType::Bitfield(_)
-				) {
+				&& !matches!(parent_type, LibType::Enumeration(_) | LibType::Bitfield(_))
+			{
 				*ret.lib_par.nullable = false;
 			}
 		}
@@ -127,7 +127,7 @@ fn is_stringify(
 	}
 }
 
-fn update_func(func:&mut FuncInfo, type_:Type) -> bool {
+fn update_func(func: &mut FuncInfo, type_: Type) -> bool {
 	if !func.commented {
 		use self::Type::*;
 		match type_ {
@@ -139,11 +139,7 @@ fn update_func(func:&mut FuncInfo, type_:Type) -> bool {
 	true
 }
 
-pub fn extract(
-	functions:&mut [FuncInfo],
-	parent_type:&LibType,
-	obj:&GObject,
-) -> Infos {
+pub fn extract(functions: &mut [FuncInfo], parent_type: &LibType, obj: &GObject) -> Infos {
 	let mut specials = Infos::default();
 	let mut has_copy = false;
 	let mut has_free = false;
@@ -151,10 +147,11 @@ pub fn extract(
 
 	for (pos, func) in functions.iter_mut().enumerate() {
 		if is_stringify(func, parent_type, obj) {
-			let return_transfer_none =
-				func.ret.parameter.as_ref().is_some_and(|ret| {
-					ret.lib_par.transfer == crate::library::Transfer::None
-				});
+			let return_transfer_none = func
+				.ret
+				.parameter
+				.as_ref()
+				.is_some_and(|ret| ret.lib_par.transfer == crate::library::Transfer::None);
 
 			// Assume only enumerations and bitfields can return static strings
 			let returns_static_ref = return_transfer_none
@@ -169,26 +166,20 @@ pub fn extract(
 				// matches the above heuristics.
 				specials.functions.insert(
 					func.glib_name.clone(),
-					FunctionInfo {
-						type_:FunctionType::StaticStringify,
-						version:func.version,
-					},
+					FunctionInfo { type_: FunctionType::StaticStringify, version: func.version },
 				);
 			}
 
 			// Some stringifying functions can serve as Display implementation
-			if matches!(
-				func.name.as_str(),
-				"to_string" | "to_str" | "name" | "get_name"
-			) {
+			if matches!(func.name.as_str(), "to_string" | "to_str" | "name" | "get_name") {
 				// FUTURE: Decide which function gets precedence if multiple
 				// Display prospects exist.
 				specials.traits.insert(
 					Type::Display,
 					TraitInfo {
-						glib_name:func.glib_name.clone(),
-						version:func.version,
-						first_parameter_mut:false,
+						glib_name: func.glib_name.clone(),
+						version: func.version,
+						first_parameter_mut: false,
 					},
 				);
 			}
@@ -206,18 +197,15 @@ pub fn extract(
 				has_free = true;
 			}
 
-			let first_parameter_mut =
-				func.parameters.c_parameters.first().is_some_and(|p| {
-					p.ref_mode == super::ref_mode::RefMode::ByRefMut
-				});
+			let first_parameter_mut = func
+				.parameters
+				.c_parameters
+				.first()
+				.is_some_and(|p| p.ref_mode == super::ref_mode::RefMode::ByRefMut);
 
 			specials.traits.insert(
 				type_,
-				TraitInfo {
-					glib_name:func.glib_name.clone(),
-					version:func.version,
-					first_parameter_mut,
-				},
+				TraitInfo { glib_name: func.glib_name.clone(), version: func.version, first_parameter_mut },
 			);
 		}
 	}
@@ -227,14 +215,9 @@ pub fn extract(
 			let ty_ = Type::from_str("destroy").unwrap();
 			let func = &mut functions[pos];
 			update_func(func, ty_);
-			specials.traits.insert(
-				ty_,
-				TraitInfo {
-					glib_name,
-					version:func.version,
-					first_parameter_mut:true,
-				},
-			);
+			specials
+				.traits
+				.insert(ty_, TraitInfo { glib_name, version: func.version, first_parameter_mut: true });
 		}
 	}
 
@@ -242,11 +225,9 @@ pub fn extract(
 }
 
 // Some special functions (e.g. `copy` on refcounted types) should be exposed
-pub fn unhide(functions:&mut [FuncInfo], specials:&Infos, type_:Type) {
+pub fn unhide(functions: &mut [FuncInfo], specials: &Infos, type_: Type) {
 	if let Some(func) = specials.traits().get(&type_) {
-		let func = functions
-			.iter_mut()
-			.find(|f| f.glib_name == func.glib_name && !f.commented);
+		let func = functions.iter_mut().find(|f| f.glib_name == func.glib_name && !f.commented);
 		if let Some(func) = func {
 			func.visibility = Visibility::Public;
 			func.hidden = false;
@@ -254,7 +235,7 @@ pub fn unhide(functions:&mut [FuncInfo], specials:&Infos, type_:Type) {
 	}
 }
 
-pub fn analyze_imports(specials:&Infos, imports:&mut Imports) {
+pub fn analyze_imports(specials: &Infos, imports: &mut Imports) {
 	for (type_, info) in specials.traits() {
 		use self::Type::*;
 		match type_ {
@@ -264,9 +245,7 @@ pub fn analyze_imports(specials:&Infos, imports:&mut Imports) {
 			Compare => {
 				imports.add_with_version("glib::translate::*", info.version);
 			},
-			Equal => {
-				imports.add_with_version("glib::translate::*", info.version)
-			},
+			Equal => imports.add_with_version("glib::translate::*", info.version),
 			_ => {},
 		}
 	}

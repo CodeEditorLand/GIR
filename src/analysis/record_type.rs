@@ -14,7 +14,7 @@ pub enum RecordType {
 }
 
 impl RecordType {
-	pub fn of(record:&library::Record) -> RecordType {
+	pub fn of(record: &library::Record) -> RecordType {
 		if record.has_ref() && record.has_unref() {
 			RecordType::Refcounted
 		} else if record.has_copy() && record.has_free() {

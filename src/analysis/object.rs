@@ -2,13 +2,7 @@ use std::{borrow::Cow, ops::Deref};
 
 use log::info;
 
-use super::{
-	child_properties::ChildProperties,
-	imports::Imports,
-	info_base::InfoBase,
-	signatures::Signatures,
-	*,
-};
+use super::{child_properties::ChildProperties, imports::Imports, info_base::InfoBase, signatures::Signatures, *};
 use crate::{
 	config::gobjects::{GObject, GStatus},
 	env::Env,
@@ -31,36 +25,35 @@ pub enum LocationInObject {
 
 #[derive(Debug, Default)]
 pub struct Info {
-	pub base:InfoBase,
-	pub c_type:String,
-	pub c_class_type:Option<String>,
-	pub get_type:String,
-	pub is_interface:bool,
-	pub is_fundamental:bool,
-	pub supertypes:Vec<general::StatusedTypeId>,
-	pub final_type:bool,
-	pub generate_trait:bool,
-	pub trait_name:String,
-	pub has_constructors:bool,
-	pub has_functions:bool,
-	pub virtual_methods:Vec<functions::Info>,
-	pub signals:Vec<signals::Info>,
-	pub notify_signals:Vec<signals::Info>,
-	pub properties:Vec<properties::Property>,
-	pub builder_properties:Vec<(Vec<properties::Property>, TypeId)>,
-	pub builder_postprocess:Option<String>,
-	pub child_properties:ChildProperties,
-	pub signatures:Signatures,
+	pub base: InfoBase,
+	pub c_type: String,
+	pub c_class_type: Option<String>,
+	pub get_type: String,
+	pub is_interface: bool,
+	pub is_fundamental: bool,
+	pub supertypes: Vec<general::StatusedTypeId>,
+	pub final_type: bool,
+	pub generate_trait: bool,
+	pub trait_name: String,
+	pub has_constructors: bool,
+	pub has_functions: bool,
+	pub virtual_methods: Vec<functions::Info>,
+	pub signals: Vec<signals::Info>,
+	pub notify_signals: Vec<signals::Info>,
+	pub properties: Vec<properties::Property>,
+	pub builder_properties: Vec<(Vec<properties::Property>, TypeId)>,
+	pub builder_postprocess: Option<String>,
+	pub child_properties: ChildProperties,
+	pub signatures: Signatures,
 	/// Specific to fundamental types
-	pub ref_fn:Option<String>,
+	pub ref_fn: Option<String>,
 	/// Specific to fundamental types
-	pub unref_fn:Option<String>,
+	pub unref_fn: Option<String>,
 }
 
 impl Info {
 	pub fn has_signals(&self) -> bool {
-		self.signals.iter().any(|s| s.trampoline.is_ok())
-			|| self.notify_signals.iter().any(|s| s.trampoline.is_ok())
+		self.signals.iter().any(|s| s.trampoline.is_ok()) || self.notify_signals.iter().any(|s| s.trampoline.is_ok())
 	}
 
 	/// Whether we should generate an impl block for this object
@@ -87,17 +80,16 @@ impl Info {
 			|| has_builder_properties(&self.builder_properties)
 	}
 
-	pub fn need_generate_trait(&self) -> bool { self.generate_trait }
+	pub fn need_generate_trait(&self) -> bool {
+		self.generate_trait
+	}
 
 	pub fn has_action_signals(&self) -> bool {
 		self.signals.iter().any(|s| s.action_emit_name.is_some())
 	}
 
 	/// Returns the location of the function within this object
-	pub fn function_location(
-		&self,
-		fn_info:&functions::Info,
-	) -> LocationInObject {
+	pub fn function_location(&self, fn_info: &functions::Info) -> LocationInObject {
 		if fn_info.kind == FunctionKind::ClassMethod {
 			// TODO: Fix location here once we can auto generate virtual methods
 			LocationInObject::ClassExt
@@ -106,14 +98,10 @@ impl Info {
 			LocationInObject::VirtualExt
 		} else if self.final_type
 			|| self.is_fundamental
-			|| matches!(
-				fn_info.kind,
-				FunctionKind::Constructor | FunctionKind::Function
-			) {
-			LocationInObject::Impl
-		} else if fn_info.status == GStatus::Generate
-			|| self.full_name == "GObject.Object"
+			|| matches!(fn_info.kind, FunctionKind::Constructor | FunctionKind::Function)
 		{
+			LocationInObject::Impl
+		} else if fn_info.status == GStatus::Generate || self.full_name == "GObject.Object" {
 			LocationInObject::Ext
 		} else {
 			LocationInObject::ExtManual
@@ -123,39 +111,22 @@ impl Info {
 	/// Generate doc name based on function location within this object
 	/// See also [`Self::function_location()`].
 	/// Returns `(item/crate path including type name, just the type name)`
-	pub fn generate_doc_link_info(
-		&self,
-		fn_info:&functions::Info,
-	) -> (Cow<'_, str>, Cow<'_, str>) {
+	pub fn generate_doc_link_info(&self, fn_info: &functions::Info) -> (Cow<'_, str>, Cow<'_, str>) {
 		match self.function_location(fn_info) {
-			LocationInObject::Impl => {
-				(self.name.as_str().into(), self.name.as_str().into())
-			},
+			LocationInObject::Impl => (self.name.as_str().into(), self.name.as_str().into()),
 			LocationInObject::ExtManual => {
 				let trait_name = format!("{}Manual", self.trait_name);
 				(format!("prelude::{trait_name}").into(), trait_name.into())
 			},
-			LocationInObject::Ext => {
-				(
-					format!("prelude::{}", self.trait_name).into(),
-					self.trait_name.as_str().into(),
-				)
-			},
+			LocationInObject::Ext => (format!("prelude::{}", self.trait_name).into(), self.trait_name.as_str().into()),
 			LocationInObject::VirtualExt => {
 				// TODO: maybe a different config for subclass trait name?
-				let trait_name =
-					format!("{}Impl", self.trait_name.trim_end_matches("Ext"));
-				(
-					format!("subclass::prelude::{trait_name}").into(),
-					trait_name.into(),
-				)
+				let trait_name = format!("{}Impl", self.trait_name.trim_end_matches("Ext"));
+				(format!("subclass::prelude::{trait_name}").into(), trait_name.into())
 			},
 			LocationInObject::ClassExt | LocationInObject::ClassExtManual => {
 				let trait_name = format!("{}Ext", self.trait_name);
-				(
-					format!("subclass::prelude::{}", trait_name).into(),
-					trait_name.into(),
-				)
+				(format!("subclass::prelude::{}", trait_name).into(), trait_name.into())
 			},
 			LocationInObject::Builder => {
 				panic!(
@@ -170,16 +141,16 @@ impl Info {
 impl Deref for Info {
 	type Target = InfoBase;
 
-	fn deref(&self) -> &InfoBase { &self.base }
+	fn deref(&self) -> &InfoBase {
+		&self.base
+	}
 }
 
-pub fn has_builder_properties(
-	builder_properties:&[(Vec<properties::Property>, TypeId)],
-) -> bool {
+pub fn has_builder_properties(builder_properties: &[(Vec<properties::Property>, TypeId)]) -> bool {
 	builder_properties.iter().map(|b| b.0.iter().len()).sum::<usize>() > 0
 }
 
-pub fn class(env:&Env, obj:&GObject, deps:&[library::TypeId]) -> Option<Info> {
+pub fn class(env: &Env, obj: &GObject, deps: &[library::TypeId]) -> Option<Info> {
 	info!("Analyzing class {}", obj.name);
 	let full_name = obj.name.clone();
 
@@ -187,9 +158,9 @@ pub fn class(env:&Env, obj:&GObject, deps:&[library::TypeId]) -> Option<Info> {
 
 	let type_ = env.type_(class_tid);
 
-	let name:String = split_namespace_name(&full_name).1.into();
+	let name: String = split_namespace_name(&full_name).1.into();
 
-	let klass:&library::Class = type_.maybe_ref()?;
+	let klass: &library::Class = type_.maybe_ref()?;
 
 	let version = obj.version.or(klass.version);
 	let deprecated_version = klass.deprecated_version;
@@ -197,31 +168,19 @@ pub fn class(env:&Env, obj:&GObject, deps:&[library::TypeId]) -> Option<Info> {
 	let mut imports = Imports::with_defined(&env.library, &name);
 
 	let is_fundamental = obj.fundamental_type.unwrap_or(klass.is_fundamental);
-	let supertypes = supertypes::analyze(
-		env,
-		class_tid,
-		version,
-		&mut imports,
-		is_fundamental,
-	);
+	let supertypes = supertypes::analyze(env, class_tid, version, &mut imports, is_fundamental);
 	let supertypes_properties = supertypes
 		.iter()
-		.filter_map(|t| {
-			match env.type_(t.type_id) {
-				Type::Class(c) => Some(&c.properties),
-				Type::Interface(i) => Some(&i.properties),
-				_ => None,
-			}
+		.filter_map(|t| match env.type_(t.type_id) {
+			Type::Class(c) => Some(&c.properties),
+			Type::Interface(i) => Some(&i.properties),
+			_ => None,
 		})
 		.flatten()
 		.collect::<Vec<&_>>();
 
 	let final_type = klass.final_type;
-	let trait_name = obj
-		.trait_name
-		.as_ref()
-		.cloned()
-		.unwrap_or_else(|| format!("{name}Ext"));
+	let trait_name = obj.trait_name.as_ref().cloned().unwrap_or_else(|| format!("{name}Ext"));
 
 	let mut signatures = Signatures::with_capacity(klass.functions.len());
 
@@ -252,11 +211,7 @@ pub fn class(env:&Env, obj:&GObject, deps:&[library::TypeId]) -> Option<Info> {
 	);
 	let mut specials = special_functions::extract(&mut functions, type_, obj);
 	// `copy` will duplicate an object while `clone` just adds a reference
-	special_functions::unhide(
-		&mut functions,
-		&specials,
-		special_functions::Type::Copy,
-	);
+	special_functions::unhide(&mut functions, &specials, special_functions::Type::Copy);
 	// these are all automatically derived on objects and compare by pointer. If
 	// such functions exist they will provide additional functionality
 	for t in &[
@@ -269,15 +224,7 @@ pub fn class(env:&Env, obj:&GObject, deps:&[library::TypeId]) -> Option<Info> {
 	}
 	special_functions::analyze_imports(&specials, &mut imports);
 
-	let signals = signals::analyze(
-		env,
-		&klass.signals,
-		class_tid,
-		!final_type,
-		is_fundamental,
-		obj,
-		&mut imports,
-	);
+	let signals = signals::analyze(env, &klass.signals, class_tid, !final_type, is_fundamental, obj, &mut imports);
 	let (properties, notify_signals) = properties::analyze(
 		env,
 		&klass.properties,
@@ -292,26 +239,15 @@ pub fn class(env:&Env, obj:&GObject, deps:&[library::TypeId]) -> Option<Info> {
 		&functions,
 	);
 
-	let builder_properties = class_builder::analyze(
-		env,
-		&klass.properties,
-		class_tid,
-		obj,
-		&mut imports,
-	);
+	let builder_properties = class_builder::analyze(env, &klass.properties, class_tid, obj, &mut imports);
 
-	let child_properties = child_properties::analyze(
-		env,
-		obj.child_properties.as_ref(),
-		class_tid,
-		&mut imports,
-	);
+	let child_properties = child_properties::analyze(env, obj.child_properties.as_ref(), class_tid, &mut imports);
 
-	let has_methods = functions.iter().any(|f| {
-		f.kind == library::FunctionKind::Method && f.status.need_generate()
-	});
-	let has_signals = signals.iter().any(|s| s.trampoline.is_ok())
-		|| notify_signals.iter().any(|s| s.trampoline.is_ok());
+	let has_methods = functions
+		.iter()
+		.any(|f| f.kind == library::FunctionKind::Method && f.status.need_generate());
+	let has_signals =
+		signals.iter().any(|s| s.trampoline.is_ok()) || notify_signals.iter().any(|s| s.trampoline.is_ok());
 	// There's no point in generating a trait if there are no signals, methods,
 	// properties and child properties: it would be empty
 	//
@@ -319,10 +255,7 @@ pub fn class(env:&Env, obj:&GObject, deps:&[library::TypeId]) -> Option<Info> {
 	// possible subtypes
 	let generate_trait = !final_type
 		&& !is_fundamental
-		&& (has_signals
-			|| has_methods
-			|| !properties.is_empty()
-			|| !child_properties.is_empty());
+		&& (has_signals || has_methods || !properties.is_empty() || !child_properties.is_empty());
 
 	imports.add("crate::ffi");
 	if is_fundamental {
@@ -340,16 +273,16 @@ pub fn class(env:&Env, obj:&GObject, deps:&[library::TypeId]) -> Option<Info> {
 
 	let base = InfoBase {
 		full_name,
-		type_id:class_tid,
+		type_id: class_tid,
 		name,
 		functions,
 		specials,
 		imports,
 		version,
 		deprecated_version,
-		cfg_condition:obj.cfg_condition.clone(),
-		concurrency:obj.concurrency,
-		visibility:obj.visibility,
+		cfg_condition: obj.cfg_condition.clone(),
+		concurrency: obj.concurrency,
+		visibility: obj.visibility,
 	};
 
 	// patch up trait methods in the symbol table
@@ -367,10 +300,10 @@ pub fn class(env:&Env, obj:&GObject, deps:&[library::TypeId]) -> Option<Info> {
 
 	let info = Info {
 		base,
-		c_type:klass.c_type.clone(),
-		c_class_type:klass.c_class_type.clone(),
-		get_type:klass.glib_get_type.clone(),
-		is_interface:false,
+		c_type: klass.c_type.clone(),
+		c_class_type: klass.c_class_type.clone(),
+		get_type: klass.glib_get_type.clone(),
+		is_interface: false,
 		is_fundamental,
 		supertypes,
 		final_type,
@@ -383,21 +316,17 @@ pub fn class(env:&Env, obj:&GObject, deps:&[library::TypeId]) -> Option<Info> {
 		notify_signals,
 		properties,
 		builder_properties,
-		builder_postprocess:obj.builder_postprocess.clone(),
+		builder_postprocess: obj.builder_postprocess.clone(),
 		child_properties,
 		signatures,
-		ref_fn:klass.ref_fn.clone(),
-		unref_fn:klass.unref_fn.clone(),
+		ref_fn: klass.ref_fn.clone(),
+		unref_fn: klass.unref_fn.clone(),
 	};
 
 	Some(info)
 }
 
-pub fn interface(
-	env:&Env,
-	obj:&GObject,
-	deps:&[library::TypeId],
-) -> Option<Info> {
+pub fn interface(env: &Env, obj: &GObject, deps: &[library::TypeId]) -> Option<Info> {
 	info!("Analyzing interface {}", obj.name);
 	let full_name = obj.name.clone();
 
@@ -405,9 +334,9 @@ pub fn interface(
 
 	let type_ = env.type_(iface_tid);
 
-	let name:String = split_namespace_name(&full_name).1.into();
+	let name: String = split_namespace_name(&full_name).1.into();
 
-	let iface:&library::Interface = type_.maybe_ref()?;
+	let iface: &library::Interface = type_.maybe_ref()?;
 
 	let version = obj.version.or(iface.version);
 	let deprecated_version = iface.deprecated_version;
@@ -416,25 +345,18 @@ pub fn interface(
 	imports.add("glib::prelude::*");
 	imports.add("crate::ffi");
 
-	let supertypes =
-		supertypes::analyze(env, iface_tid, version, &mut imports, false);
+	let supertypes = supertypes::analyze(env, iface_tid, version, &mut imports, false);
 	let supertypes_properties = supertypes
 		.iter()
-		.filter_map(|t| {
-			match env.type_(t.type_id) {
-				Type::Class(c) => Some(&c.properties),
-				Type::Interface(i) => Some(&i.properties),
-				_ => None,
-			}
+		.filter_map(|t| match env.type_(t.type_id) {
+			Type::Class(c) => Some(&c.properties),
+			Type::Interface(i) => Some(&i.properties),
+			_ => None,
 		})
 		.flatten()
 		.collect::<Vec<&_>>();
 
-	let trait_name = obj
-		.trait_name
-		.as_ref()
-		.cloned()
-		.unwrap_or_else(|| format!("{name}Ext"));
+	let trait_name = obj.trait_name.as_ref().cloned().unwrap_or_else(|| format!("{name}Ext"));
 
 	let mut signatures = Signatures::with_capacity(iface.functions.len());
 
@@ -450,15 +372,7 @@ pub fn interface(
 		Some(deps),
 	);
 
-	let signals = signals::analyze(
-		env,
-		&iface.signals,
-		iface_tid,
-		true,
-		false,
-		obj,
-		&mut imports,
-	);
+	let signals = signals::analyze(env, &iface.signals, iface_tid, true, false, obj, &mut imports);
 	let (properties, notify_signals) = properties::analyze(
 		env,
 		&iface.properties,
@@ -475,29 +389,29 @@ pub fn interface(
 
 	let base = InfoBase {
 		full_name,
-		type_id:iface_tid,
+		type_id: iface_tid,
 		name,
 		functions,
-		specials:Default::default(),
+		specials: Default::default(),
 		imports,
 		version,
 		deprecated_version,
-		cfg_condition:obj.cfg_condition.clone(),
-		concurrency:obj.concurrency,
-		visibility:obj.visibility,
+		cfg_condition: obj.cfg_condition.clone(),
+		concurrency: obj.concurrency,
+		visibility: obj.visibility,
 	};
 
 	let has_functions = !base.functions().is_empty();
 
 	let info = Info {
 		base,
-		c_type:iface.c_type.clone(),
-		c_class_type:iface.c_class_type.clone(),
-		get_type:iface.glib_get_type.clone(),
-		is_interface:true,
+		c_type: iface.c_type.clone(),
+		c_class_type: iface.c_class_type.clone(),
+		get_type: iface.glib_get_type.clone(),
+		is_interface: true,
 		supertypes,
-		final_type:false,
-		generate_trait:true,
+		final_type: false,
+		generate_trait: true,
 		trait_name,
 		has_functions,
 		signals,

@@ -1,7 +1,7 @@
 use std::{
 	borrow::Cow,
 	cmp::Ordering,
-	collections::{btree_map::BTreeMap, HashSet},
+	collections::{HashSet, btree_map::BTreeMap},
 	ops::{Deref, DerefMut},
 	vec::IntoIter,
 };
@@ -9,9 +9,11 @@ use std::{
 use super::namespaces;
 use crate::{library::Library, nameutil::crate_name, version::Version};
 
-fn is_first_char_up(s:&str) -> bool { s.chars().next().unwrap().is_uppercase() }
+fn is_first_char_up(s: &str) -> bool {
+	s.chars().next().unwrap().is_uppercase()
+}
 
-fn check_up_eq(a:&str, b:&str) -> Ordering {
+fn check_up_eq(a: &str, b: &str) -> Ordering {
 	let is_a_up = is_first_char_up(a);
 	let is_b_up = is_first_char_up(b);
 	if is_a_up != is_b_up {
@@ -35,10 +37,7 @@ fn check_up_eq(a:&str, b:&str) -> Ordering {
 /// use gdk::foo; // lowercases come first here as well.
 /// use gdk::Foo;
 /// ```
-fn compare_imports(
-	a:&(&String, &ImportConditions),
-	b:&(&String, &ImportConditions),
-) -> Ordering {
+fn compare_imports(a: &(&String, &ImportConditions), b: &(&String, &ImportConditions)) -> Ordering {
 	let s = check_up_eq(a.0, b.0);
 	if s != Ordering::Equal {
 		return s;
@@ -73,38 +72,34 @@ fn compare_imports(
 #[derive(Clone, Debug, Default)]
 pub struct Imports {
 	/// Name of the current crate.
-	crate_name:String,
+	crate_name: String,
 	/// Names defined within current module. It doesn't need use declaration.
-	defined:HashSet<String>,
-	defaults:ImportConditions,
-	map:BTreeMap<String, ImportConditions>,
+	defined: HashSet<String>,
+	defaults: ImportConditions,
+	map: BTreeMap<String, ImportConditions>,
 }
 
 impl Imports {
-	pub fn new(gir:&Library) -> Self {
+	pub fn new(gir: &Library) -> Self {
 		Self {
-			crate_name:make_crate_name(gir),
-			defined:HashSet::new(),
-			defaults:ImportConditions::default(),
-			map:BTreeMap::new(),
+			crate_name: make_crate_name(gir),
+			defined: HashSet::new(),
+			defaults: ImportConditions::default(),
+			map: BTreeMap::new(),
 		}
 	}
 
-	pub fn with_defined(gir:&Library, name:&str) -> Self {
+	pub fn with_defined(gir: &Library, name: &str) -> Self {
 		Self {
-			crate_name:make_crate_name(gir),
-			defined:std::iter::once(name.to_owned()).collect(),
-			defaults:ImportConditions::default(),
-			map:BTreeMap::new(),
+			crate_name: make_crate_name(gir),
+			defined: std::iter::once(name.to_owned()).collect(),
+			defaults: ImportConditions::default(),
+			map: BTreeMap::new(),
 		}
 	}
 
 	#[must_use = "ImportsWithDefault must live while defaults are needed"]
-	pub fn with_defaults(
-		&mut self,
-		version:Option<Version>,
-		constraint:&Option<String>,
-	) -> ImportsWithDefault<'_> {
+	pub fn with_defaults(&mut self, version: Option<Version>, constraint: &Option<String>) -> ImportsWithDefault<'_> {
 		let constraints = if let Some(constraint) = constraint {
 			vec![constraint.clone()]
 		} else {
@@ -115,15 +110,15 @@ impl Imports {
 		ImportsWithDefault::new(self)
 	}
 
-	fn reset_defaults(&mut self) { self.defaults.clear(); }
+	fn reset_defaults(&mut self) {
+		self.defaults.clear();
+	}
 
 	/// The goals of this function is to discard unwanted imports like "crate".
 	/// It also extends the checks in case you are implementing "X". For
 	/// example, you don't want to import "X" or "crate::X" in this case.
-	fn common_checks(&self, name:&str) -> bool {
-		if (!name.contains("::") && name != "xlib")
-			|| self.defined.contains(name)
-		{
+	fn common_checks(&self, name: &str) -> bool {
+		if (!name.contains("::") && name != "xlib") || self.defined.contains(name) {
 			false
 		} else if let Some(name) = name.strip_prefix("crate::") {
 			!self.defined.contains(name)
@@ -136,7 +131,7 @@ impl Imports {
 	///
 	/// Removes existing imports from `self.map` and marks `name` as
 	/// available to counter future import "requests".
-	pub fn add_defined(&mut self, name:&str) {
+	pub fn add_defined(&mut self, name: &str) {
 		if self.defined.insert(name.to_owned()) {
 			self.map.remove(name);
 		}
@@ -146,7 +141,7 @@ impl Imports {
 	///
 	/// For example, if name is `X::Y::Z` then it will be available as `Z`.
 	/// Uses defaults.
-	pub fn add(&mut self, name:&str) {
+	pub fn add(&mut self, name: &str) {
 		if !self.common_checks(name) {
 			return;
 		}
@@ -163,10 +158,7 @@ impl Imports {
 				};
 			}
 			let defaults = &self.defaults;
-			let entry = self
-				.map
-				.entry(name.into_owned())
-				.or_insert_with(|| defaults.clone());
+			let entry = self.map.entry(name.into_owned()).or_insert_with(|| defaults.clone());
 			entry.update_version(self.defaults.version);
 			entry.update_constraints(&self.defaults.constraints);
 		}
@@ -175,16 +167,15 @@ impl Imports {
 	/// Declares that name should be available through its last path component.
 	///
 	/// For example, if name is `X::Y::Z` then it will be available as `Z`.
-	pub fn add_with_version(&mut self, name:&str, version:Option<Version>) {
+	pub fn add_with_version(&mut self, name: &str, version: Option<Version>) {
 		if !self.common_checks(name) {
 			return;
 		}
 		if let Some(name) = self.strip_crate_name(name) {
-			let entry =
-				self.map.entry(name.into_owned()).or_insert(ImportConditions {
-					version,
-					constraints:Vec::new(),
-				});
+			let entry = self
+				.map
+				.entry(name.into_owned())
+				.or_insert(ImportConditions { version, constraints: Vec::new() });
 			entry.update_version(version);
 			// Since there is no constraint on this import, if any constraint
 			// is present, we can just remove it.
@@ -196,30 +187,24 @@ impl Imports {
 	/// and provides an optional feature constraint.
 	///
 	/// For example, if name is `X::Y::Z` then it will be available as `Z`.
-	pub fn add_with_constraint(
-		&mut self,
-		name:&str,
-		version:Option<Version>,
-		constraint:Option<&str>,
-	) {
+	pub fn add_with_constraint(&mut self, name: &str, version: Option<Version>, constraint: Option<&str>) {
 		if !self.common_checks(name) {
 			return;
 		}
 		if let Some(name) = self.strip_crate_name(name) {
 			let entry = if let Some(constraint) = constraint {
 				let constraint = String::from(constraint);
-				let entry = self.map.entry(name.into_owned()).or_insert(
-					ImportConditions {
-						version,
-						constraints:vec![constraint.clone()],
-					},
-				);
+				let entry = self
+					.map
+					.entry(name.into_owned())
+					.or_insert(ImportConditions { version, constraints: vec![constraint.clone()] });
 				entry.add_constraint(constraint);
 				entry
 			} else {
-				let entry = self.map.entry(name.into_owned()).or_insert(
-					ImportConditions { version, constraints:Vec::new() },
-				);
+				let entry = self
+					.map
+					.entry(name.into_owned())
+					.or_insert(ImportConditions { version, constraints: Vec::new() });
 				// Since there is no constraint on this import, if any
 				// constraint is present, we can just remove it.
 				entry.constraints.clear();
@@ -232,7 +217,7 @@ impl Imports {
 	/// Declares that name should be available through its full path.
 	///
 	/// For example, if name is `X::Y` then it will be available as `X::Y`.
-	pub fn add_used_type(&mut self, used_type:&str) {
+	pub fn add_used_type(&mut self, used_type: &str) {
 		if let Some(i) = used_type.find("::") {
 			if i == 0 {
 				self.add(&used_type[2..]);
@@ -244,7 +229,7 @@ impl Imports {
 		}
 	}
 
-	pub fn add_used_types(&mut self, used_types:&[String]) {
+	pub fn add_used_types(&mut self, used_types: &[String]) {
 		for s in used_types {
 			self.add_used_type(s);
 		}
@@ -253,11 +238,7 @@ impl Imports {
 	/// Declares that name should be available through its full path.
 	///
 	/// For example, if name is `X::Y` then it will be available as `X::Y`.
-	pub fn add_used_type_with_version(
-		&mut self,
-		used_type:&str,
-		version:Option<Version>,
-	) {
+	pub fn add_used_type_with_version(&mut self, used_type: &str, version: Option<Version>) {
 		if let Some(i) = used_type.find("::") {
 			if i == 0 {
 				self.add_with_version(&used_type[2..], version);
@@ -273,7 +254,7 @@ impl Imports {
 	///
 	/// Returns `None` if name matches crate name exactly. Otherwise returns
 	/// name with crate name prefix stripped or full name if there was no match.
-	fn strip_crate_name<'a>(&self, name:&'a str) -> Option<Cow<'a, str>> {
+	fn strip_crate_name<'a>(&self, name: &'a str) -> Option<Cow<'a, str>> {
 		let prefix = &self.crate_name;
 		if !name.starts_with(prefix) {
 			return Some(Cow::Borrowed(name));
@@ -297,31 +278,39 @@ impl Imports {
 }
 
 pub struct ImportsWithDefault<'a> {
-	imports:&'a mut Imports,
+	imports: &'a mut Imports,
 }
 
 impl<'a> ImportsWithDefault<'a> {
-	fn new(imports:&'a mut Imports) -> Self { Self { imports } }
+	fn new(imports: &'a mut Imports) -> Self {
+		Self { imports }
+	}
 }
 
 impl Drop for ImportsWithDefault<'_> {
-	fn drop(&mut self) { self.imports.reset_defaults(); }
+	fn drop(&mut self) {
+		self.imports.reset_defaults();
+	}
 }
 
 impl Deref for ImportsWithDefault<'_> {
 	type Target = Imports;
 
-	fn deref(&self) -> &Self::Target { self.imports }
+	fn deref(&self) -> &Self::Target {
+		self.imports
+	}
 }
 
 impl DerefMut for ImportsWithDefault<'_> {
-	fn deref_mut(&mut self) -> &mut Self::Target { self.imports }
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		self.imports
+	}
 }
 
 #[derive(Clone, Debug, Default, Ord, PartialEq, PartialOrd, Eq)]
 pub struct ImportConditions {
-	pub version:Option<Version>,
-	pub constraints:Vec<String>,
+	pub version: Option<Version>,
+	pub constraints: Vec<String>,
 }
 
 impl ImportConditions {
@@ -330,13 +319,13 @@ impl ImportConditions {
 		self.constraints.clear();
 	}
 
-	fn update_version(&mut self, version:Option<Version>) {
+	fn update_version(&mut self, version: Option<Version>) {
 		if version < self.version {
 			self.version = version;
 		}
 	}
 
-	fn add_constraint(&mut self, constraint:String) {
+	fn add_constraint(&mut self, constraint: String) {
 		// If the import is already present but doesn't have any constraint,
 		// we don't want to add one.
 		if self.constraints.is_empty() {
@@ -349,7 +338,7 @@ impl ImportConditions {
 		}
 	}
 
-	fn update_constraints(&mut self, constraints:&[String]) {
+	fn update_constraints(&mut self, constraints: &[String]) {
 		// If the import is already present but doesn't have any constraint,
 		// we don't want to add one.
 		if self.constraints.is_empty() {
@@ -371,7 +360,7 @@ impl ImportConditions {
 	}
 }
 
-fn make_crate_name(gir:&Library) -> String {
+fn make_crate_name(gir: &Library) -> String {
 	if gir.is_glib_crate() {
 		crate_name("GLib")
 	} else {

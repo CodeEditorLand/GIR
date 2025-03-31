@@ -6,19 +6,12 @@ use std::{
 use log::error;
 
 use super::{
-	return_value::ToReturnValue,
-	trampoline_from_glib::TrampolineFromGlib,
-	trampoline_to_glib::TrampolineToGlib,
+	return_value::ToReturnValue, trampoline_from_glib::TrampolineFromGlib, trampoline_to_glib::TrampolineToGlib,
 };
 use crate::{
 	analysis::{
-		bounds::Bounds,
-		ffi_type::ffi_type,
-		ref_mode::RefMode,
-		rust_type::RustType,
-		trampoline_parameters::*,
-		trampolines::Trampoline,
-		try_from_glib::TryFromGlib,
+		bounds::Bounds, ffi_type::ffi_type, ref_mode::RefMode, rust_type::RustType, trampoline_parameters::*,
+		trampolines::Trampoline, try_from_glib::TryFromGlib,
 	},
 	consts::TYPE_PARAMETERS_START,
 	env::Env,
@@ -28,20 +21,11 @@ use crate::{
 	writer::primitives::tabs,
 };
 
-pub fn generate(
-	w:&mut dyn Write,
-	env:&Env,
-	analysis:&Trampoline,
-	in_trait:bool,
-	indent:usize,
-) -> Result<()> {
+pub fn generate(w: &mut dyn Write, env: &Env, analysis: &Trampoline, in_trait: bool, indent: usize) -> Result<()> {
 	let (self_bound, fn_self_bound) = in_trait
 		.then(|| {
 			(
-				format!(
-					"{}: IsA<{}>, ",
-					TYPE_PARAMETERS_START, analysis.type_name
-				),
+				format!("{}: IsA<{}>, ", TYPE_PARAMETERS_START, analysis.type_name),
 				Some(TYPE_PARAMETERS_START.to_string()),
 			)
 		})
@@ -73,10 +57,10 @@ pub fn generate(
 }
 
 pub fn func_string(
-	env:&Env,
-	analysis:&Trampoline,
-	replace_self_bound:Option<impl AsRef<str>>,
-	closure:bool,
+	env: &Env,
+	analysis: &Trampoline,
+	replace_self_bound: Option<impl AsRef<str>>,
+	closure: bool,
 ) -> String {
 	let param_str = func_parameters(env, analysis, replace_self_bound, closure);
 	let return_str = func_returns(env, analysis);
@@ -103,10 +87,10 @@ pub fn func_string(
 }
 
 fn func_parameters(
-	env:&Env,
-	analysis:&Trampoline,
-	replace_self_bound:Option<impl AsRef<str>>,
-	closure:bool,
+	env: &Env,
+	analysis: &Trampoline,
+	replace_self_bound: Option<impl AsRef<str>>,
+	closure: bool,
 ) -> String {
 	let mut param_str = String::with_capacity(100);
 
@@ -131,47 +115,37 @@ fn func_parameters(
 	param_str
 }
 
-fn func_parameter(env:&Env, par:&RustParameter, bounds:&Bounds) -> String {
+fn func_parameter(env: &Env, par: &RustParameter, bounds: &Bounds) -> String {
 	// TODO: restore mutable support
-	let ref_mode = if par.ref_mode == RefMode::ByRefMut {
-		RefMode::ByRef
-	} else {
-		par.ref_mode
-	};
+	let ref_mode = if par.ref_mode == RefMode::ByRefMut { RefMode::ByRef } else { par.ref_mode };
 
 	match bounds.get_parameter_bound(&par.name) {
 		// TODO: ASYNC??
-		Some(bound) => {
-			bound.full_type_parameter_reference(ref_mode, par.nullable, false)
-		},
+		Some(bound) => bound.full_type_parameter_reference(ref_mode, par.nullable, false),
 		// TODO
 		// Some((None, _)) => panic!("Trampoline expects type name"),
-		None => {
-			RustType::builder(env, par.typ)
-				.direction(par.direction)
-				.nullable(par.nullable)
-				.ref_mode(ref_mode)
-				.try_build_param()
-				.into_string()
-		},
+		None => RustType::builder(env, par.typ)
+			.direction(par.direction)
+			.nullable(par.nullable)
+			.ref_mode(ref_mode)
+			.try_build_param()
+			.into_string(),
 	}
 }
 
-fn func_returns(env:&Env, analysis:&Trampoline) -> String {
+fn func_returns(env: &Env, analysis: &Trampoline) -> String {
 	if analysis.ret.typ == Default::default() {
 		String::new()
 	} else if analysis.inhibit {
 		format!(" -> {inhibit}", inhibit = use_glib_type(env, "Propagation"))
-	} else if let Some(return_type) =
-		analysis.ret.to_return_value(env, &TryFromGlib::default(), true)
-	{
+	} else if let Some(return_type) = analysis.ret.to_return_value(env, &TryFromGlib::default(), true) {
 		format!(" -> {return_type}")
 	} else {
 		String::new()
 	}
 }
 
-fn trampoline_parameters(env:&Env, analysis:&Trampoline) -> String {
+fn trampoline_parameters(env: &Env, analysis: &Trampoline) -> String {
 	if analysis.is_notify {
 		return format!(
 			"{}, _param_spec: {}",
@@ -180,7 +154,7 @@ fn trampoline_parameters(env:&Env, analysis:&Trampoline) -> String {
 		);
 	}
 
-	let mut parameter_strs:Vec<String> = Vec::new();
+	let mut parameter_strs: Vec<String> = Vec::new();
 	for par in &analysis.parameters.c_parameters {
 		let par_str = trampoline_parameter(env, par);
 		parameter_strs.push(par_str);
@@ -189,12 +163,12 @@ fn trampoline_parameters(env:&Env, analysis:&Trampoline) -> String {
 	parameter_strs.join(", ")
 }
 
-fn trampoline_parameter(env:&Env, par:&CParameter) -> String {
+fn trampoline_parameter(env: &Env, par: &CParameter) -> String {
 	let ffi_type = ffi_type(env, par.typ, &par.c_type);
 	format!("{}: {}", par.name, ffi_type.into_string())
 }
 
-fn trampoline_returns(env:&Env, analysis:&Trampoline) -> String {
+fn trampoline_returns(env: &Env, analysis: &Trampoline) -> String {
 	if analysis.ret.typ == Default::default() {
 		String::new()
 	} else {
@@ -203,12 +177,7 @@ fn trampoline_returns(env:&Env, analysis:&Trampoline) -> String {
 	}
 }
 
-fn transformation_vars(
-	w:&mut dyn Write,
-	env:&Env,
-	analysis:&Trampoline,
-	prepend:&str,
-) -> Result<()> {
+fn transformation_vars(w: &mut dyn Write, env: &Env, analysis: &Trampoline, prepend: &str) -> Result<()> {
 	use crate::analysis::trampoline_parameters::TransformationType::*;
 	for transform in &analysis.parameters.transformations {
 		match transform.transformation {
@@ -230,11 +199,7 @@ fn transformation_vars(
 	Ok(())
 }
 
-fn trampoline_call_func(
-	env:&Env,
-	analysis:&Trampoline,
-	in_trait:bool,
-) -> String {
+fn trampoline_call_func(env: &Env, analysis: &Trampoline, in_trait: bool) -> String {
 	let params = trampoline_call_parameters(env, analysis, in_trait);
 	let ret = if analysis.ret.typ == Default::default() {
 		String::new()
@@ -244,13 +209,9 @@ fn trampoline_call_func(
 	format!("f({params}){ret}")
 }
 
-fn trampoline_call_parameters(
-	env:&Env,
-	analysis:&Trampoline,
-	in_trait:bool,
-) -> String {
+fn trampoline_call_parameters(env: &Env, analysis: &Trampoline, in_trait: bool) -> String {
 	let mut need_downcast = in_trait;
-	let mut parameter_strs:Vec<String> = Vec::new();
+	let mut parameter_strs: Vec<String> = Vec::new();
 	for (ind, par) in analysis.parameters.rust_parameters.iter().enumerate() {
 		let transformation = match analysis.parameters.get(ind) {
 			Some(transformation) => transformation,
@@ -259,11 +220,7 @@ fn trampoline_call_parameters(
 				continue;
 			},
 		};
-		let par_str = transformation.trampoline_from_glib(
-			env,
-			need_downcast,
-			*par.nullable,
-		);
+		let par_str = transformation.trampoline_from_glib(env, need_downcast, *par.nullable);
 		parameter_strs.push(par_str);
 		need_downcast = false; // Only downcast first parameter
 	}

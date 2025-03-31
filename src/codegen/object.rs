@@ -4,27 +4,16 @@ use std::{
 };
 
 use super::{
-	child_properties,
-	function,
-	general,
+	child_properties, function, general,
 	general::{
-		cfg_deprecated_string,
-		not_version_condition_no_docsrs,
-		version_condition,
-		version_condition_no_doc,
+		cfg_deprecated_string, not_version_condition_no_docsrs, version_condition, version_condition_no_doc,
 		version_condition_string,
 	},
-	properties,
-	signal,
-	trait_impls,
+	properties, signal, trait_impls,
 };
 use crate::{
 	analysis::{
-		self,
-		bounds::BoundType,
-		object::has_builder_properties,
-		record_type::RecordType,
-		ref_mode::RefMode,
+		self, bounds::BoundType, object::has_builder_properties, record_type::RecordType, ref_mode::RefMode,
 		rust_type::RustType,
 	},
 	env::Env,
@@ -33,11 +22,7 @@ use crate::{
 	traits::IntoString,
 };
 
-pub fn generate(
-	w:&mut dyn Write,
-	env:&Env,
-	analysis:&analysis::object::Info,
-) -> Result<()> {
+pub fn generate(w: &mut dyn Write, env: &Env, analysis: &analysis::object::Info) -> Result<()> {
 	general::start_comments(w, &env.config)?;
 	if analysis.functions.iter().any(|f| f.deprecated_version.is_some()) {
 		writeln!(w, "#![allow(deprecated)]")?;
@@ -62,24 +47,18 @@ pub fn generate(
 		let mut versions = BTreeMap::new();
 
 		match *env.library.type_(p.type_id) {
-			Type::Interface(Interface { .. }) | Type::Class(Class { .. })
-				if !p.status.ignored() =>
-			{
+			Type::Interface(Interface { .. }) | Type::Class(Class { .. }) if !p.status.ignored() => {
 				let full_name = p.type_id.full_name(&env.library);
 				// TODO: Might want to add a configuration on the object to
 				// override this per supertype in case the supertype existed
 				// in older versions but newly became on for this very type.
 				if let Some(object) = env.analysis.objects.get(&full_name) {
 					let parent_version = object.version;
-					let namespace_min_version = env
-						.config
-						.min_required_version(env, Some(object.type_id.ns_id));
-					if parent_version > analysis.version
-						&& parent_version > namespace_min_version
-					{
+					let namespace_min_version = env.config.min_required_version(env, Some(object.type_id.ns_id));
+					if parent_version > analysis.version && parent_version > namespace_min_version {
 						versions
 							.entry(parent_version)
-							.and_modify(|t:&mut Vec<_>| t.push(p))
+							.and_modify(|t: &mut Vec<_>| t.push(p))
 							.or_insert_with(|| vec![p]);
 						if !versions.is_empty() {
 							namespaces.push((p.type_id.ns_id, versions));
@@ -124,7 +103,7 @@ pub fn generate(
 		// Write the `glib::wrapper!` calls from the highest version to the
 		// lowest and remember which supertypes have to be removed for the
 		// next call.
-		let mut remove_types:HashSet<library::TypeId> = HashSet::new();
+		let mut remove_types: HashSet<library::TypeId> = HashSet::new();
 
 		let mut previous_version = None;
 		let mut previous_ns_id = None;
@@ -139,22 +118,8 @@ pub fn generate(
 
 				writeln!(w)?;
 				if previous_version.is_some() {
-					not_version_condition_no_docsrs(
-						w,
-						env,
-						Some(*ns_id),
-						previous_version,
-						false,
-						0,
-					)?;
-					version_condition_no_doc(
-						w,
-						env,
-						Some(*ns_id),
-						version,
-						false,
-						0,
-					)?;
+					not_version_condition_no_docsrs(w, env, Some(*ns_id), previous_version, false, 0)?;
+					version_condition_no_doc(w, env, Some(*ns_id), version, false, 0)?;
 				} else {
 					version_condition(w, env, Some(*ns_id), version, false, 0)?;
 				}
@@ -188,14 +153,7 @@ pub fn generate(
 			.cloned()
 			.collect::<Vec<_>>();
 		writeln!(w)?;
-		not_version_condition_no_docsrs(
-			w,
-			env,
-			previous_ns_id,
-			previous_version,
-			false,
-			0,
-		)?;
+		not_version_condition_no_docsrs(w, env, previous_ns_id, previous_version, false, 0)?;
 		general::define_object_type(
 			w,
 			env,
@@ -210,10 +168,7 @@ pub fn generate(
 		)?;
 	}
 
-	if (analysis.need_generate_inherent()
-		&& analysis.should_generate_impl_block())
-		|| !analysis.final_type
-	{
+	if (analysis.need_generate_inherent() && analysis.should_generate_impl_block()) || !analysis.final_type {
 		writeln!(w)?;
 		write!(w, "impl {} {{", analysis.name)?;
 
@@ -283,14 +238,7 @@ pub fn generate(
 			}
 
 			for child_property in &analysis.child_properties {
-				child_properties::generate(
-					w,
-					env,
-					child_property,
-					false,
-					false,
-					1,
-				)?;
+				child_properties::generate(w, env, child_property, false, false, 1)?;
 			}
 		}
 
@@ -309,9 +257,7 @@ pub fn generate(
 		}
 
 		if !analysis.need_generate_trait() {
-			for signal_analysis in
-				analysis.signals.iter().chain(analysis.notify_signals.iter())
-			{
+			for signal_analysis in analysis.signals.iter().chain(analysis.notify_signals.iter()) {
 				signal::generate(w, env, signal_analysis, false, false, 1)?;
 			}
 		}
@@ -333,11 +279,7 @@ pub fn generate(
 		&analysis.name,
 		&analysis.functions,
 		&analysis.specials,
-		if analysis.need_generate_trait() {
-			Some(&analysis.trait_name)
-		} else {
-			None
-		},
+		if analysis.need_generate_trait() { Some(&analysis.trait_name) } else { None },
 		analysis.version,
 		None, /* There is no need for #[cfg()] since it's applied on the
 		       * whole file. */
@@ -370,22 +312,17 @@ pub fn generate(
 	Ok(())
 }
 
-fn generate_builder(
-	w:&mut dyn Write,
-	env:&Env,
-	analysis:&analysis::object::Info,
-) -> Result<()> {
-	let glib_crate_name =
-		if env.namespaces.is_glib_crate { "crate" } else { "glib" };
+fn generate_builder(w: &mut dyn Write, env: &Env, analysis: &analysis::object::Info) -> Result<()> {
+	let glib_crate_name = if env.namespaces.is_glib_crate { "crate" } else { "glib" };
 
 	writeln!(
-        w,
-        "// rustdoc-stripper-ignore-next
+		w,
+		"// rustdoc-stripper-ignore-next
         /// A [builder-pattern] type to construct [`{}`] objects.
         ///
         /// [builder-pattern]: https://doc.rust-lang.org/1.0.0/style/ownership/builders.html",
-        analysis.name,
-    )?;
+		analysis.name,
+	)?;
 	writeln!(w, "#[must_use = \"The builder must be built to be used\"]")?;
 	writeln!(
 		w,
@@ -413,62 +350,36 @@ fn generate_builder(
 				.try_build();
 			let comment_prefix = if param_type.is_err() { "//" } else { "" };
 			let mut param_type_str = param_type.into_string();
-			let (param_type_override, bounds, conversion) = match param_type_str
-				.as_str()
-			{
-				"&str" => {
-					(
-						Some(format!("impl Into<{glib_crate_name}::GString>")),
-						String::new(),
-						".into()",
-					)
-				},
-				"&[&str]" => {
-					(
-						Some(format!("impl Into<{glib_crate_name}::StrV>")),
-						String::from(""),
-						".into()",
-					)
-				},
+			let (param_type_override, bounds, conversion) = match param_type_str.as_str() {
+				"&str" => (Some(format!("impl Into<{glib_crate_name}::GString>")), String::new(), ".into()"),
+				"&[&str]" => (Some(format!("impl Into<{glib_crate_name}::StrV>")), String::from(""), ".into()"),
 				_ if !property.bounds.is_empty() => {
-					let (bounds, _) =
-						function::bounds(&property.bounds, &[], false, false);
-					let param_bound =
-						property.bounds.get_parameter_bound(&property.name);
-					let alias = param_bound.map(|bound| {
-						bound.full_type_parameter_reference(
-							RefMode::ByRef,
-							Nullable(false),
-							false,
-						)
-					});
-					let conversion = param_bound.and_then(|bound| {
-						match bound.bound_type {
-							BoundType::AsRef(_) => Some(".as_ref().clone()"),
-							_ => None,
-						}
+					let (bounds, _) = function::bounds(&property.bounds, &[], false, false);
+					let param_bound = property.bounds.get_parameter_bound(&property.name);
+					let alias = param_bound
+						.map(|bound| bound.full_type_parameter_reference(RefMode::ByRef, Nullable(false), false));
+					let conversion = param_bound.and_then(|bound| match bound.bound_type {
+						BoundType::AsRef(_) => Some(".as_ref().clone()"),
+						_ => None,
 					});
 					(alias, bounds, conversion.unwrap_or(".clone().upcast()"))
 				},
 				typ if typ.starts_with('&') => {
-					let should_clone =
-						if let crate::library::Type::Record(record) =
-							env.type_(property.typ)
-						{
-							match RecordType::of(record) {
-								RecordType::Boxed => "",
-								RecordType::AutoBoxed => {
-									if !record.has_copy() {
-										""
-									} else {
-										".clone()"
-									}
-								},
-								_ => ".clone()",
-							}
-						} else {
-							".clone()"
-						};
+					let should_clone = if let crate::library::Type::Record(record) = env.type_(property.typ) {
+						match RecordType::of(record) {
+							RecordType::Boxed => "",
+							RecordType::AutoBoxed => {
+								if !record.has_copy() {
+									""
+								} else {
+									".clone()"
+								}
+							},
+							_ => ".clone()",
+						}
+					} else {
+						".clone()"
+					};
 
 					(None, String::new(), should_clone)
 				},
@@ -477,24 +388,11 @@ fn generate_builder(
 			if let Some(param_type_override) = param_type_override {
 				param_type_str = param_type_override.to_string();
 			}
-			let name = nameutil::mangle_keywords(nameutil::signal_to_snake(
-				&property.name,
-			));
+			let name = nameutil::mangle_keywords(nameutil::signal_to_snake(&property.name));
 
-			let version_condition_string = version_condition_string(
-				env,
-				Some(super_tid.ns_id),
-				property.version,
-				false,
-				1,
-			);
-			let deprecated_string = cfg_deprecated_string(
-				env,
-				Some(*super_tid),
-				property.deprecated_version,
-				false,
-				1,
-			);
+			let version_condition_string =
+				version_condition_string(env, Some(super_tid.ns_id), property.version, false, 1);
+			let deprecated_string = cfg_deprecated_string(env, Some(*super_tid), property.deprecated_version, false, 1);
 			let version_prefix = version_condition_string
 				.map(|version| format!("{comment_prefix}{version}\n"))
 				.unwrap_or_default();
@@ -540,11 +438,7 @@ fn generate_builder(
 	writeln!(w, "}}")
 }
 
-fn generate_trait(
-	w:&mut dyn Write,
-	env:&Env,
-	analysis:&analysis::object::Info,
-) -> Result<()> {
+fn generate_trait(w: &mut dyn Write, env: &Env, analysis: &analysis::object::Info) -> Result<()> {
 	write!(
 		w,
 		"mod sealed {{
@@ -575,49 +469,35 @@ pub trait {}: IsA<{}> + sealed::Sealed + 'static {{",
 	for child_property in &analysis.child_properties {
 		child_properties::generate(w, env, child_property, true, false, 1)?;
 	}
-	for signal_analysis in
-		analysis.signals.iter().chain(analysis.notify_signals.iter())
-	{
+	for signal_analysis in analysis.signals.iter().chain(analysis.notify_signals.iter()) {
 		signal::generate(w, env, signal_analysis, true, false, 1)?;
 	}
 	writeln!(w, "}}")?;
 
 	writeln!(w)?;
-	writeln!(
-		w,
-		"impl<O: IsA<{}>> {} for O {{}}",
-		analysis.name, analysis.trait_name,
-	)?;
+	writeln!(w, "impl<O: IsA<{}>> {} for O {{}}", analysis.name, analysis.trait_name,)?;
 
 	Ok(())
 }
 
 pub fn generate_reexports(
-	env:&Env,
-	analysis:&analysis::object::Info,
-	module_name:&str,
-	contents:&mut Vec<String>,
-	traits:&mut Vec<String>,
-	builders:&mut Vec<String>,
+	env: &Env,
+	analysis: &analysis::object::Info,
+	module_name: &str,
+	contents: &mut Vec<String>,
+	traits: &mut Vec<String>,
+	builders: &mut Vec<String>,
 ) {
-	let mut cfgs:Vec<String> = Vec::new();
-	if let Some(cfg) =
-		general::cfg_condition_string(analysis.cfg_condition.as_ref(), false, 0)
-	{
+	let mut cfgs: Vec<String> = Vec::new();
+	if let Some(cfg) = general::cfg_condition_string(analysis.cfg_condition.as_ref(), false, 0) {
+		cfgs.push(cfg);
+	}
+	if let Some(cfg) = general::version_condition_string(env, None, analysis.version, false, 0) {
 		cfgs.push(cfg);
 	}
 	if let Some(cfg) =
-		general::version_condition_string(env, None, analysis.version, false, 0)
+		general::cfg_deprecated_string(env, Some(analysis.type_id), analysis.deprecated_version, false, 0)
 	{
-		cfgs.push(cfg);
-	}
-	if let Some(cfg) = general::cfg_deprecated_string(
-		env,
-		Some(analysis.type_id),
-		analysis.deprecated_version,
-		false,
-		0,
-	) {
 		cfgs.push(cfg);
 	}
 
@@ -637,19 +517,13 @@ pub fn generate_reexports(
 		for cfg in &cfgs {
 			traits.push(format!("\t{cfg}"));
 		}
-		traits.push(format!(
-			"\tpub use super::{}::{};",
-			module_name, analysis.trait_name
-		));
+		traits.push(format!("\tpub use super::{}::{};", module_name, analysis.trait_name));
 	}
 
 	if has_builder_properties(&analysis.builder_properties) {
 		for cfg in &cfgs {
 			builders.push(format!("\t{cfg}"));
 		}
-		builders.push(format!(
-			"\tpub use super::{}::{}Builder;",
-			module_name, analysis.name
-		));
+		builders.push(format!("\tpub use super::{}::{}Builder;", module_name, analysis.name));
 	}
 }

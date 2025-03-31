@@ -8,12 +8,8 @@ use std::{
 };
 
 use crate::{
-	analysis::conversion_type::ConversionType,
-	config::gobjects::GStatus,
-	env::Env,
-	nameutil::split_namespace_name,
-	traits::*,
-	version::Version,
+	analysis::conversion_type::ConversionType, config::gobjects::GStatus, env::Env, nameutil::split_namespace_name,
+	traits::*, version::Version,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -26,7 +22,7 @@ pub enum Transfer {
 impl FromStr for Transfer {
 	type Err = String;
 
-	fn from_str(name:&str) -> Result<Self, String> {
+	fn from_str(name: &str) -> Result<Self, String> {
 		match name {
 			"none" => Ok(Self::None),
 			"container" => Ok(Self::Container),
@@ -47,15 +43,19 @@ pub enum ParameterDirection {
 }
 
 impl ParameterDirection {
-	pub fn is_in(self) -> bool { matches!(self, Self::In | Self::InOut) }
+	pub fn is_in(self) -> bool {
+		matches!(self, Self::In | Self::InOut)
+	}
 
-	pub fn is_out(self) -> bool { matches!(self, Self::Out | Self::InOut) }
+	pub fn is_out(self) -> bool {
+		matches!(self, Self::Out | Self::InOut)
+	}
 }
 
 impl FromStr for ParameterDirection {
 	type Err = String;
 
-	fn from_str(name:&str) -> Result<Self, String> {
+	fn from_str(name: &str) -> Result<Self, String> {
 		match name {
 			"in" => Ok(Self::In),
 			"out" => Ok(Self::Out),
@@ -89,19 +89,27 @@ pub enum ParameterScope {
 }
 
 impl ParameterScope {
-	pub fn is_forever(self) -> bool { matches!(self, Self::Forever) }
+	pub fn is_forever(self) -> bool {
+		matches!(self, Self::Forever)
+	}
 
-	pub fn is_call(self) -> bool { matches!(self, Self::Call) }
+	pub fn is_call(self) -> bool {
+		matches!(self, Self::Call)
+	}
 
-	pub fn is_async(self) -> bool { matches!(self, Self::Async) }
+	pub fn is_async(self) -> bool {
+		matches!(self, Self::Async)
+	}
 
-	pub fn is_none(self) -> bool { matches!(self, Self::None) }
+	pub fn is_none(self) -> bool {
+		matches!(self, Self::None)
+	}
 }
 
 impl FromStr for ParameterScope {
 	type Err = String;
 
-	fn from_str(name:&str) -> Result<Self, String> {
+	fn from_str(name: &str) -> Result<Self, String> {
 		match name {
 			"call" => Ok(Self::Call),
 			"async" => Ok(Self::Async),
@@ -118,11 +126,15 @@ pub struct Nullable(pub bool);
 impl Deref for Nullable {
 	type Target = bool;
 
-	fn deref(&self) -> &bool { &self.0 }
+	fn deref(&self) -> &bool {
+		&self.0
+	}
 }
 
 impl DerefMut for Nullable {
-	fn deref_mut(&mut self) -> &mut bool { &mut self.0 }
+	fn deref_mut(&mut self) -> &mut bool {
+		&mut self.0
+	}
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -131,7 +143,9 @@ pub struct Mandatory(pub bool);
 impl Deref for Mandatory {
 	type Target = bool;
 
-	fn deref(&self) -> &bool { &self.0 }
+	fn deref(&self) -> &bool {
+		&self.0
+	}
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -140,7 +154,9 @@ pub struct Infallible(pub bool);
 impl Deref for Infallible {
 	type Target = bool;
 
-	fn deref(&self) -> &bool { &self.0 }
+	fn deref(&self) -> &bool {
+		&self.0
+	}
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -156,7 +172,7 @@ pub enum FunctionKind {
 impl FromStr for FunctionKind {
 	type Err = String;
 
-	fn from_str(name:&str) -> Result<Self, String> {
+	fn from_str(name: &str) -> Result<Self, String> {
 		match name {
 			"constructor" => Ok(Self::Constructor),
 			"function" => Ok(Self::Function),
@@ -179,7 +195,7 @@ pub enum Concurrency {
 impl FromStr for Concurrency {
 	type Err = String;
 
-	fn from_str(name:&str) -> Result<Self, String> {
+	fn from_str(name: &str) -> Result<Self, String> {
 		match name {
 			"none" => Ok(Self::None),
 			"send" => Ok(Self::Send),
@@ -260,7 +276,7 @@ impl Basic {
 	}
 }
 
-const BASIC:&[(&str, Basic)] = &[
+const BASIC: &[(&str, Basic)] = &[
 	("none", Basic::None),
 	("gboolean", Basic::Boolean),
 	("gint8", Basic::Int8),
@@ -308,69 +324,83 @@ const BASIC:&[(&str, Basic)] = &[
 
 #[derive(Clone, Copy, Debug, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TypeId {
-	pub ns_id:u16,
-	pub id:u32,
+	pub ns_id: u16,
+	pub id: u32,
 }
 
 impl TypeId {
-	pub fn full_name(self, library:&Library) -> String {
+	pub fn full_name(self, library: &Library) -> String {
 		let ns_name = &library.namespace(self.ns_id).name;
 		let type_ = &library.type_(self);
 		format!("{}.{}", ns_name, &type_.get_name())
 	}
 
-	pub fn tid_none() -> TypeId { Default::default() }
+	pub fn tid_none() -> TypeId {
+		Default::default()
+	}
 
-	pub fn tid_bool() -> TypeId { TypeId { ns_id:0, id:1 } }
+	pub fn tid_bool() -> TypeId {
+		TypeId { ns_id: 0, id: 1 }
+	}
 
-	pub fn tid_uint32() -> TypeId { TypeId { ns_id:0, id:7 } }
+	pub fn tid_uint32() -> TypeId {
+		TypeId { ns_id: 0, id: 7 }
+	}
 
-	pub fn tid_utf8() -> TypeId { TypeId { ns_id:0, id:28 } }
+	pub fn tid_utf8() -> TypeId {
+		TypeId { ns_id: 0, id: 28 }
+	}
 
-	pub fn tid_filename() -> TypeId { TypeId { ns_id:0, id:29 } }
+	pub fn tid_filename() -> TypeId {
+		TypeId { ns_id: 0, id: 29 }
+	}
 
-	pub fn tid_os_string() -> TypeId { TypeId { ns_id:0, id:33 } }
+	pub fn tid_os_string() -> TypeId {
+		TypeId { ns_id: 0, id: 33 }
+	}
 
-	pub fn tid_c_bool() -> TypeId { TypeId { ns_id:0, id:34 } }
+	pub fn tid_c_bool() -> TypeId {
+		TypeId { ns_id: 0, id: 34 }
+	}
 
-	pub fn is_basic_type(self, env:&Env) -> bool {
+	pub fn is_basic_type(self, env: &Env) -> bool {
 		env.library.type_(self).is_basic_type(env)
 	}
 }
 
 #[derive(Debug)]
 pub struct Alias {
-	pub name:String,
-	pub c_identifier:String,
-	pub typ:TypeId,
-	pub target_c_type:String,
-	pub doc:Option<String>,
-	pub doc_deprecated:Option<String>,
+	pub name: String,
+	pub c_identifier: String,
+	pub typ: TypeId,
+	pub target_c_type: String,
+	pub doc: Option<String>,
+	pub doc_deprecated: Option<String>,
 }
 
 #[derive(Debug)]
 pub struct Constant {
-	pub name:String,
-	pub c_identifier:String,
-	pub typ:TypeId,
-	pub c_type:String,
-	pub value:String,
-	pub version:Option<Version>,
-	pub deprecated_version:Option<Version>,
-	pub doc:Option<String>,
-	pub doc_deprecated:Option<String>,
+	pub name: String,
+	pub c_identifier: String,
+	pub typ: TypeId,
+	pub c_type: String,
+	pub value: String,
+	pub version: Option<Version>,
+	pub deprecated_version: Option<Version>,
+	pub doc: Option<String>,
+	pub doc_deprecated: Option<String>,
 }
 
 #[derive(Debug)]
 pub struct Member {
-	pub name:String,
-	pub c_identifier:String,
-	pub value:String,
-	pub doc:Option<String>,
-	pub doc_deprecated:Option<String>,
-	pub status:GStatus,
-	pub version:Option<Version>,
-	pub deprecated_version:Option<Version>,
+	pub name: String,
+	pub c_identifier: String,
+	pub value: String,
+	pub doc: Option<String>,
+	pub doc_deprecated: Option<String>,
+	pub status: GStatus,
+	pub version: Option<Version>,
+	pub deprecated_version: Option<Version>,
 }
 
 #[derive(Debug)]
@@ -381,59 +411,58 @@ pub enum ErrorDomain {
 
 #[derive(Debug)]
 pub struct Enumeration {
-	pub name:String,
-	pub c_type:String,
-	pub symbol_prefix:Option<String>,
-	pub members:Vec<Member>,
-	pub functions:Vec<Function>,
-	pub version:Option<Version>,
-	pub deprecated_version:Option<Version>,
-	pub doc:Option<String>,
-	pub doc_deprecated:Option<String>,
-	pub error_domain:Option<ErrorDomain>,
-	pub glib_get_type:Option<String>,
+	pub name: String,
+	pub c_type: String,
+	pub symbol_prefix: Option<String>,
+	pub members: Vec<Member>,
+	pub functions: Vec<Function>,
+	pub version: Option<Version>,
+	pub deprecated_version: Option<Version>,
+	pub doc: Option<String>,
+	pub doc_deprecated: Option<String>,
+	pub error_domain: Option<ErrorDomain>,
+	pub glib_get_type: Option<String>,
 }
 
 #[derive(Debug)]
 pub struct Bitfield {
-	pub name:String,
-	pub c_type:String,
-	pub symbol_prefix:Option<String>,
-	pub members:Vec<Member>,
-	pub functions:Vec<Function>,
-	pub version:Option<Version>,
-	pub deprecated_version:Option<Version>,
-	pub doc:Option<String>,
-	pub doc_deprecated:Option<String>,
-	pub glib_get_type:Option<String>,
+	pub name: String,
+	pub c_type: String,
+	pub symbol_prefix: Option<String>,
+	pub members: Vec<Member>,
+	pub functions: Vec<Function>,
+	pub version: Option<Version>,
+	pub deprecated_version: Option<Version>,
+	pub doc: Option<String>,
+	pub doc_deprecated: Option<String>,
+	pub glib_get_type: Option<String>,
 }
 
 #[derive(Default, Debug)]
 pub struct Record {
-	pub name:String,
-	pub c_type:String,
-	pub symbol_prefix:Option<String>,
-	pub glib_get_type:Option<String>,
-	pub gtype_struct_for:Option<String>,
-	pub fields:Vec<Field>,
-	pub functions:Vec<Function>,
-	pub version:Option<Version>,
-	pub deprecated_version:Option<Version>,
-	pub doc:Option<String>,
-	pub doc_deprecated:Option<String>,
+	pub name: String,
+	pub c_type: String,
+	pub symbol_prefix: Option<String>,
+	pub glib_get_type: Option<String>,
+	pub gtype_struct_for: Option<String>,
+	pub fields: Vec<Field>,
+	pub functions: Vec<Function>,
+	pub version: Option<Version>,
+	pub deprecated_version: Option<Version>,
+	pub doc: Option<String>,
+	pub doc_deprecated: Option<String>,
 	/// A 'pointer' record is one where the c:type is a typedef that
 	/// doesn't look like a pointer, but is internally: typedef struct _X *X;
-	pub pointer:bool,
+	pub pointer: bool,
 	/// A 'disguised' record is one where the c:type is a typedef to
 	/// a struct whose content and size are unknown, it is :typedef struct _X
 	/// X;
-	pub disguised:bool,
+	pub disguised: bool,
 }
 
 impl Record {
 	pub fn has_free(&self) -> bool {
-		self.functions.iter().any(|f| f.name == "free")
-			|| (self.has_copy() && self.has_destroy())
+		self.functions.iter().any(|f| f.name == "free") || (self.has_copy() && self.has_destroy())
 	}
 
 	pub fn has_copy(&self) -> bool {
@@ -455,147 +484,147 @@ impl Record {
 
 #[derive(Default, Debug)]
 pub struct Field {
-	pub name:String,
-	pub typ:TypeId,
-	pub c_type:Option<String>,
-	pub private:bool,
-	pub bits:Option<u8>,
-	pub array_length:Option<u32>,
-	pub doc:Option<String>,
+	pub name: String,
+	pub typ: TypeId,
+	pub c_type: Option<String>,
+	pub private: bool,
+	pub bits: Option<u8>,
+	pub array_length: Option<u32>,
+	pub doc: Option<String>,
 }
 
 #[derive(Default, Debug)]
 pub struct Union {
-	pub name:String,
-	pub c_type:Option<String>,
-	pub symbol_prefix:Option<String>,
-	pub glib_get_type:Option<String>,
-	pub fields:Vec<Field>,
-	pub functions:Vec<Function>,
-	pub doc:Option<String>,
+	pub name: String,
+	pub c_type: Option<String>,
+	pub symbol_prefix: Option<String>,
+	pub glib_get_type: Option<String>,
+	pub fields: Vec<Field>,
+	pub functions: Vec<Function>,
+	pub doc: Option<String>,
 }
 
 #[derive(Debug)]
 pub struct Property {
-	pub name:String,
-	pub readable:bool,
-	pub writable:bool,
-	pub construct:bool,
-	pub construct_only:bool,
-	pub typ:TypeId,
-	pub c_type:Option<String>,
-	pub transfer:Transfer,
-	pub version:Option<Version>,
-	pub deprecated_version:Option<Version>,
-	pub doc:Option<String>,
-	pub doc_deprecated:Option<String>,
-	pub getter:Option<String>,
-	pub setter:Option<String>,
+	pub name: String,
+	pub readable: bool,
+	pub writable: bool,
+	pub construct: bool,
+	pub construct_only: bool,
+	pub typ: TypeId,
+	pub c_type: Option<String>,
+	pub transfer: Transfer,
+	pub version: Option<Version>,
+	pub deprecated_version: Option<Version>,
+	pub doc: Option<String>,
+	pub doc_deprecated: Option<String>,
+	pub getter: Option<String>,
+	pub setter: Option<String>,
 }
 
 #[derive(Clone, Debug)]
 pub struct Parameter {
-	pub name:String,
-	pub typ:TypeId,
-	pub c_type:String,
-	pub instance_parameter:bool,
-	pub direction:ParameterDirection,
-	pub transfer:Transfer,
-	pub caller_allocates:bool,
-	pub nullable:Nullable,
-	pub array_length:Option<u32>,
-	pub is_error:bool,
-	pub doc:Option<String>,
-	pub scope:ParameterScope,
+	pub name: String,
+	pub typ: TypeId,
+	pub c_type: String,
+	pub instance_parameter: bool,
+	pub direction: ParameterDirection,
+	pub transfer: Transfer,
+	pub caller_allocates: bool,
+	pub nullable: Nullable,
+	pub array_length: Option<u32>,
+	pub is_error: bool,
+	pub doc: Option<String>,
+	pub scope: ParameterScope,
 	/// Index of the user data parameter associated with the callback.
-	pub closure:Option<usize>,
+	pub closure: Option<usize>,
 	/// Index of the destroy notification parameter associated with the
 	/// callback.
-	pub destroy:Option<usize>,
+	pub destroy: Option<usize>,
 }
 
 #[derive(Debug)]
 pub struct Function {
-	pub name:String,
-	pub c_identifier:Option<String>,
-	pub kind:FunctionKind,
-	pub parameters:Vec<Parameter>,
-	pub ret:Parameter,
-	pub throws:bool,
-	pub version:Option<Version>,
-	pub deprecated_version:Option<Version>,
-	pub doc:Option<String>,
-	pub doc_deprecated:Option<String>,
-	pub get_property:Option<String>,
-	pub set_property:Option<String>,
-	pub finish_func:Option<String>,
-	pub async_func:Option<String>,
-	pub sync_func:Option<String>,
+	pub name: String,
+	pub c_identifier: Option<String>,
+	pub kind: FunctionKind,
+	pub parameters: Vec<Parameter>,
+	pub ret: Parameter,
+	pub throws: bool,
+	pub version: Option<Version>,
+	pub deprecated_version: Option<Version>,
+	pub doc: Option<String>,
+	pub doc_deprecated: Option<String>,
+	pub get_property: Option<String>,
+	pub set_property: Option<String>,
+	pub finish_func: Option<String>,
+	pub async_func: Option<String>,
+	pub sync_func: Option<String>,
 }
 
 #[derive(Debug)]
 pub struct Signal {
-	pub name:String,
-	pub parameters:Vec<Parameter>,
-	pub ret:Parameter,
-	pub is_action:bool,
-	pub is_detailed:bool,
-	pub version:Option<Version>,
-	pub deprecated_version:Option<Version>,
-	pub doc:Option<String>,
-	pub doc_deprecated:Option<String>,
+	pub name: String,
+	pub parameters: Vec<Parameter>,
+	pub ret: Parameter,
+	pub is_action: bool,
+	pub is_detailed: bool,
+	pub version: Option<Version>,
+	pub deprecated_version: Option<Version>,
+	pub doc: Option<String>,
+	pub doc_deprecated: Option<String>,
 }
 
 #[derive(Default, Debug)]
 pub struct Interface {
-	pub name:String,
-	pub c_type:String,
-	pub symbol_prefix:String,
-	pub type_struct:Option<String>,
-	pub c_class_type:Option<String>,
-	pub glib_get_type:String,
-	pub functions:Vec<Function>,
-	pub virtual_methods:Vec<Function>,
-	pub signals:Vec<Signal>,
-	pub properties:Vec<Property>,
-	pub prerequisites:Vec<TypeId>,
-	pub version:Option<Version>,
-	pub deprecated_version:Option<Version>,
-	pub doc:Option<String>,
-	pub doc_deprecated:Option<String>,
+	pub name: String,
+	pub c_type: String,
+	pub symbol_prefix: String,
+	pub type_struct: Option<String>,
+	pub c_class_type: Option<String>,
+	pub glib_get_type: String,
+	pub functions: Vec<Function>,
+	pub virtual_methods: Vec<Function>,
+	pub signals: Vec<Signal>,
+	pub properties: Vec<Property>,
+	pub prerequisites: Vec<TypeId>,
+	pub version: Option<Version>,
+	pub deprecated_version: Option<Version>,
+	pub doc: Option<String>,
+	pub doc_deprecated: Option<String>,
 }
 
 #[derive(Default, Debug)]
 pub struct Class {
-	pub name:String,
-	pub c_type:String,
-	pub symbol_prefix:String,
-	pub type_struct:Option<String>,
-	pub c_class_type:Option<String>,
-	pub glib_get_type:String,
-	pub fields:Vec<Field>,
-	pub functions:Vec<Function>,
-	pub virtual_methods:Vec<Function>,
-	pub signals:Vec<Signal>,
-	pub properties:Vec<Property>,
-	pub parent:Option<TypeId>,
-	pub implements:Vec<TypeId>,
-	pub final_type:bool,
-	pub version:Option<Version>,
-	pub deprecated_version:Option<Version>,
-	pub doc:Option<String>,
-	pub doc_deprecated:Option<String>,
-	pub is_abstract:bool,
-	pub is_fundamental:bool,
+	pub name: String,
+	pub c_type: String,
+	pub symbol_prefix: String,
+	pub type_struct: Option<String>,
+	pub c_class_type: Option<String>,
+	pub glib_get_type: String,
+	pub fields: Vec<Field>,
+	pub functions: Vec<Function>,
+	pub virtual_methods: Vec<Function>,
+	pub signals: Vec<Signal>,
+	pub properties: Vec<Property>,
+	pub parent: Option<TypeId>,
+	pub implements: Vec<TypeId>,
+	pub final_type: bool,
+	pub version: Option<Version>,
+	pub deprecated_version: Option<Version>,
+	pub doc: Option<String>,
+	pub doc_deprecated: Option<String>,
+	pub is_abstract: bool,
+	pub is_fundamental: bool,
 	/// Specific to fundamental types
-	pub ref_fn:Option<String>,
-	pub unref_fn:Option<String>,
+	pub ref_fn: Option<String>,
+	pub unref_fn: Option<String>,
 }
 
 #[derive(Debug)]
 pub struct Custom {
-	pub name:String,
-	pub conversion_type:ConversionType,
+	pub name: String,
+	pub conversion_type: ConversionType,
 }
 
 macro_rules! impl_lexical_ord {
@@ -659,7 +688,7 @@ pub enum Type {
 }
 
 impl fmt::Display for Type {
-	fn fmt(&self, f:&mut fmt::Formatter<'_>) -> fmt::Result {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		f.write_str(match self {
 			Self::Basic(_) => "Basic",
 			Self::Alias(_) => "Alias",
@@ -745,40 +774,23 @@ impl Type {
 		}
 	}
 
-	pub fn c_array(
-		library:&mut Library,
-		inner:TypeId,
-		size:Option<u16>,
-		c_type:Option<String>,
-	) -> TypeId {
+	pub fn c_array(library: &mut Library, inner: TypeId, size: Option<u16>, c_type: Option<String>) -> TypeId {
 		let name = Self::c_array_internal_name(inner, size, &c_type);
 		if let Some(size) = size {
-			library.add_type(
-				INTERNAL_NAMESPACE,
-				&name,
-				Self::FixedArray(inner, size, c_type),
-			)
+			library.add_type(INTERNAL_NAMESPACE, &name, Self::FixedArray(inner, size, c_type))
 		} else {
 			library.add_type(INTERNAL_NAMESPACE, &name, Self::CArray(inner))
 		}
 	}
 
-	pub fn find_c_array(
-		library:&Library,
-		inner:TypeId,
-		size:Option<u16>,
-	) -> TypeId {
+	pub fn find_c_array(library: &Library, inner: TypeId, size: Option<u16>) -> TypeId {
 		let name = Self::c_array_internal_name(inner, size, &None);
 		library
 			.find_type(INTERNAL_NAMESPACE, &name)
 			.unwrap_or_else(|| panic!("No type for '*.{name}'"))
 	}
 
-	fn c_array_internal_name(
-		inner:TypeId,
-		size:Option<u16>,
-		c_type:&Option<String>,
-	) -> String {
+	fn c_array_internal_name(inner: TypeId, size: Option<u16>, c_type: &Option<String>) -> String {
 		if let Some(size) = size {
 			format!("[#{inner:?}; {size};{c_type:?}]")
 		} else {
@@ -786,11 +798,7 @@ impl Type {
 		}
 	}
 
-	pub fn container(
-		library:&mut Library,
-		name:&str,
-		mut inner:Vec<TypeId>,
-	) -> Option<TypeId> {
+	pub fn container(library: &mut Library, name: &str, mut inner: Vec<TypeId>) -> Option<TypeId> {
 		match (name, inner.len()) {
 			("GLib.Array", 1) => {
 				let tid = inner.remove(0);
@@ -803,10 +811,7 @@ impl Type {
 			("GLib.HashTable", 2) => {
 				let k_tid = inner.remove(0);
 				let v_tid = inner.remove(0);
-				Some((
-					format!("HashTable(#{k_tid:?}, #{v_tid:?})"),
-					Self::HashTable(k_tid, v_tid),
-				))
+				Some((format!("HashTable(#{k_tid:?}, #{v_tid:?})"), Self::HashTable(k_tid, v_tid)))
 			},
 			("GLib.List", 1) => {
 				let tid = inner.remove(0);
@@ -821,26 +826,21 @@ impl Type {
 		.map(|(name, typ)| library.add_type(INTERNAL_NAMESPACE, &name, typ))
 	}
 
-	pub fn function(library:&mut Library, func:Function) -> TypeId {
-		let mut param_tids:Vec<TypeId> =
-			func.parameters.iter().map(|p| p.typ).collect();
+	pub fn function(library: &mut Library, func: Function) -> TypeId {
+		let mut param_tids: Vec<TypeId> = func.parameters.iter().map(|p| p.typ).collect();
 		param_tids.push(func.ret.typ);
 		let typ = Self::Function(func);
-		library.add_type(
-			INTERNAL_NAMESPACE,
-			&format!("fn<#{param_tids:?}>"),
-			typ,
-		)
+		library.add_type(INTERNAL_NAMESPACE, &format!("fn<#{param_tids:?}>"), typ)
 	}
 
-	pub fn union(library:&mut Library, u:Union, ns_id:u16) -> TypeId {
-		let field_tids:Vec<TypeId> = u.fields.iter().map(|f| f.typ).collect();
+	pub fn union(library: &mut Library, u: Union, ns_id: u16) -> TypeId {
+		let field_tids: Vec<TypeId> = u.fields.iter().map(|f| f.typ).collect();
 		let typ = Self::Union(u);
 		library.add_type(ns_id, &format!("#{field_tids:?}"), typ)
 	}
 
-	pub fn record(library:&mut Library, r:Record, ns_id:u16) -> TypeId {
-		let field_tids:Vec<TypeId> = r.fields.iter().map(|f| f.typ).collect();
+	pub fn record(library: &mut Library, r: Record, ns_id: u16) -> TypeId {
+		let field_tids: Vec<TypeId> = r.fields.iter().map(|f| f.typ).collect();
 		let typ = Self::Record(r);
 		library.add_type(ns_id, &format!("#{field_tids:?}"), typ)
 	}
@@ -857,21 +857,20 @@ impl Type {
 		}
 	}
 
-	pub fn is_basic(&self) -> bool { matches!(*self, Self::Basic(_)) }
+	pub fn is_basic(&self) -> bool {
+		matches!(*self, Self::Basic(_))
+	}
 
 	/// If the type is an Alias containing a basic, it'll return true (whereas
 	/// `is_basic` won't).
-	pub fn is_basic_type(&self, env:&Env) -> bool {
+	pub fn is_basic_type(&self, env: &Env) -> bool {
 		match self {
 			Self::Alias(x) => env.library.type_(x.typ).is_basic_type(env),
 			x => x.is_basic(),
 		}
 	}
 
-	pub fn get_inner_type<'a>(
-		&'a self,
-		env:&'a Env,
-	) -> Option<(&'a Type, u16)> {
+	pub fn get_inner_type<'a>(&'a self, env: &'a Env) -> Option<(&'a Type, u16)> {
 		match *self {
 			Self::Array(t)
 			| Self::CArray(t)
@@ -886,11 +885,17 @@ impl Type {
 		}
 	}
 
-	pub fn is_function(&self) -> bool { matches!(*self, Self::Function(_)) }
+	pub fn is_function(&self) -> bool {
+		matches!(*self, Self::Function(_))
+	}
 
-	pub fn is_class(&self) -> bool { matches!(*self, Self::Class(_)) }
+	pub fn is_class(&self) -> bool {
+		matches!(*self, Self::Class(_))
+	}
 
-	pub fn is_interface(&self) -> bool { matches!(*self, Self::Interface(_)) }
+	pub fn is_interface(&self) -> bool {
+		matches!(*self, Self::Interface(_))
+	}
 
 	pub fn is_final_type(&self) -> bool {
 		match *self {
@@ -918,7 +923,9 @@ impl Type {
 		matches!(*self, Self::Enumeration(_))
 	}
 
-	pub fn is_bitfield(&self) -> bool { matches!(*self, Self::Bitfield(_)) }
+	pub fn is_bitfield(&self) -> bool {
+		matches!(*self, Self::Bitfield(_))
+	}
 }
 
 macro_rules! impl_maybe_ref {
@@ -940,70 +947,67 @@ macro_rules! impl_maybe_ref {
     );
 }
 
-impl_maybe_ref!(
-	Alias,
-	Bitfield,
-	Class,
-	Enumeration,
-	Function,
-	Basic,
-	Interface,
-	Record,
-	Union,
-);
+impl_maybe_ref!(Alias, Bitfield, Class, Enumeration, Function, Basic, Interface, Record, Union,);
 
 impl<U> MaybeRefAs for U {
 	fn maybe_ref_as<T>(&self) -> Option<&T>
 	where
-		Self: MaybeRef<T>, {
+		Self: MaybeRef<T>,
+	{
 		self.maybe_ref()
 	}
 
 	fn to_ref_as<T>(&self) -> &T
 	where
-		Self: MaybeRef<T>, {
+		Self: MaybeRef<T>,
+	{
 		self.to_ref()
 	}
 }
 
 #[derive(Debug, Default)]
 pub struct Namespace {
-	pub name:String,
-	pub types:Vec<Option<Type>>,
-	pub index:BTreeMap<String, u32>,
-	pub glib_name_index:HashMap<String, u32>,
-	pub constants:Vec<Constant>,
-	pub functions:Vec<Function>,
-	pub package_names:Vec<String>,
-	pub versions:BTreeSet<Version>,
-	pub doc:Option<String>,
-	pub doc_deprecated:Option<String>,
-	pub shared_library:Vec<String>,
-	pub identifier_prefixes:Vec<String>,
-	pub symbol_prefixes:Vec<String>,
+	pub name: String,
+	pub types: Vec<Option<Type>>,
+	pub index: BTreeMap<String, u32>,
+	pub glib_name_index: HashMap<String, u32>,
+	pub constants: Vec<Constant>,
+	pub functions: Vec<Function>,
+	pub package_names: Vec<String>,
+	pub versions: BTreeSet<Version>,
+	pub doc: Option<String>,
+	pub doc_deprecated: Option<String>,
+	pub shared_library: Vec<String>,
+	pub identifier_prefixes: Vec<String>,
+	pub symbol_prefixes: Vec<String>,
 	/// C headers, relative to include directories provided by pkg-config
 	/// --cflags.
-	pub c_includes:Vec<String>,
+	pub c_includes: Vec<String>,
 }
 
 impl Namespace {
-	fn new(name:&str) -> Self { Self { name:name.into(), ..Self::default() } }
+	fn new(name: &str) -> Self {
+		Self { name: name.into(), ..Self::default() }
+	}
 
-	fn add_constant(&mut self, c:Constant) { self.constants.push(c); }
+	fn add_constant(&mut self, c: Constant) {
+		self.constants.push(c);
+	}
 
-	fn add_function(&mut self, f:Function) { self.functions.push(f); }
+	fn add_function(&mut self, f: Function) {
+		self.functions.push(f);
+	}
 
-	fn type_(&self, id:u32) -> &Type {
+	fn type_(&self, id: u32) -> &Type {
 		self.types[id as usize].as_ref().unwrap()
 	}
 
-	fn type_mut(&mut self, id:u32) -> &mut Type {
+	fn type_mut(&mut self, id: u32) -> &mut Type {
 		self.types[id as usize].as_mut().unwrap()
 	}
 
-	fn add_type(&mut self, name:&str, typ:Option<Type>) -> u32 {
-		let glib_name =
-			typ.as_ref().and_then(Type::get_glib_name).map(ToOwned::to_owned);
+	fn add_type(&mut self, name: &str, typ: Option<Type>) -> u32 {
+		let glib_name = typ.as_ref().and_then(Type::get_glib_name).map(ToOwned::to_owned);
 		let id = if let Some(id) = self.find_type(name) {
 			self.types[id as usize] = typ;
 			id
@@ -1019,28 +1023,25 @@ impl Namespace {
 		id
 	}
 
-	fn find_type(&self, name:&str) -> Option<u32> {
+	fn find_type(&self, name: &str) -> Option<u32> {
 		self.index.get(name).copied()
 	}
 }
 
-pub const INTERNAL_NAMESPACE_NAME:&str = "*";
-pub const INTERNAL_NAMESPACE:u16 = 0;
-pub const MAIN_NAMESPACE:u16 = 1;
+pub const INTERNAL_NAMESPACE_NAME: &str = "*";
+pub const INTERNAL_NAMESPACE: u16 = 0;
+pub const MAIN_NAMESPACE: u16 = 1;
 
 #[derive(Debug)]
 pub struct Library {
-	pub namespaces:Vec<Namespace>,
-	pub index:HashMap<String, u16>,
+	pub namespaces: Vec<Namespace>,
+	pub index: HashMap<String, u16>,
 }
 
 impl Library {
-	pub fn new(main_namespace_name:&str) -> Self {
-		let mut library = Self { namespaces:Vec::new(), index:HashMap::new() };
-		assert_eq!(
-			INTERNAL_NAMESPACE,
-			library.add_namespace(INTERNAL_NAMESPACE_NAME)
-		);
+	pub fn new(main_namespace_name: &str) -> Self {
+		let mut library = Self { namespaces: Vec::new(), index: HashMap::new() };
+		assert_eq!(INTERNAL_NAMESPACE, library.add_namespace(INTERNAL_NAMESPACE_NAME));
 		for &(name, t) in BASIC {
 			library.add_type(INTERNAL_NAMESPACE, name, Type::Basic(t));
 		}
@@ -1054,7 +1055,7 @@ impl Library {
 		library
 	}
 
-	pub fn show_non_bound_types(&self, env:&Env) {
+	pub fn show_non_bound_types(&self, env: &Env) {
 		let not_allowed_ending = [
 			"Class",
 			"Private",
@@ -1065,8 +1066,7 @@ impl Library {
 			"Type",
 			"Interface",
 		];
-		let namespace_name =
-			self.namespaces[MAIN_NAMESPACE as usize].name.clone();
+		let namespace_name = self.namespaces[MAIN_NAMESPACE as usize].name.clone();
 		let mut parents = HashSet::new();
 
 		for x in self.namespace(MAIN_NAMESPACE).types.iter().flatten() {
@@ -1074,13 +1074,9 @@ impl Library {
 			let full_name = format!("{namespace_name}.{name}");
 			let mut check_methods = true;
 
-			if !not_allowed_ending.iter().any(|s| name.ends_with(s))
-				|| x.is_enumeration()
-				|| x.is_bitfield()
-			{
+			if !not_allowed_ending.iter().any(|s| name.ends_with(s)) || x.is_enumeration() || x.is_bitfield() {
 				let version = x.get_deprecated_version();
-				let depr_version =
-					version.unwrap_or(env.config.min_cfg_version);
+				let depr_version = version.unwrap_or(env.config.min_cfg_version);
 				if !env.analysis.objects.contains_key(&full_name)
 					&& !env.analysis.records.contains_key(&full_name)
 					&& !env.config.objects.iter().any(|o| o.1.name == full_name)
@@ -1096,35 +1092,25 @@ impl Library {
 						println!("[NOT GENERATED] {full_name}");
 					}
 				} else if let Type::Class(Class { properties, .. }) = x {
-					if !env
-						.config
-						.objects
-						.get(&full_name)
-						.is_some_and(|obj| obj.generate_builder)
-						&& properties.iter().any(|prop| {
-							prop.construct_only
-								|| prop.construct || prop.writable
-						}) {
+					if !env.config.objects.get(&full_name).is_some_and(|obj| obj.generate_builder)
+						&& properties
+							.iter()
+							.any(|prop| prop.construct_only || prop.construct || prop.writable)
+					{
 						println!("[NOT GENERATED BUILDER] {full_name}Builder");
 					}
 				}
 			}
-			if let (Some(tid), Some(gobject_id)) = (
-				env.library.find_type(0, &full_name),
-				env.library.find_type(0, "GObject.Object"),
-			) {
+			if let (Some(tid), Some(gobject_id)) =
+				(env.library.find_type(0, &full_name), env.library.find_type(0, "GObject.Object"))
+			{
 				for &super_tid in env.class_hierarchy.supertypes(tid) {
 					let ty = env.library.type_(super_tid);
 					let ns_id = super_tid.ns_id as usize;
-					let full_parent_name = format!(
-						"{}.{}",
-						self.namespaces[ns_id].name,
-						ty.get_name()
-					);
+					let full_parent_name = format!("{}.{}", self.namespaces[ns_id].name, ty.get_name());
 					if super_tid != gobject_id
-						&& env
-							.type_status(&super_tid.full_name(&env.library))
-							.ignored() && parents.insert(full_parent_name.clone())
+						&& env.type_status(&super_tid.full_name(&env.library)).ignored()
+						&& parents.insert(full_parent_name.clone())
 					{
 						if let Some(version) = ty.get_deprecated_version() {
 							println!(
@@ -1132,19 +1118,12 @@ impl Library {
 								 (deprecated in {version})"
 							);
 						} else {
-							println!(
-								"[NOT GENERATED PARENT] {full_parent_name}"
-							);
+							println!("[NOT GENERATED PARENT] {full_parent_name}");
 						}
 					}
 				}
 				if check_methods {
-					self.not_bound_functions(
-						env,
-						&format!("{full_name}::"),
-						x.functions(),
-						"METHOD",
-					);
+					self.not_bound_functions(env, &format!("{full_name}::"), x.functions(), "METHOD");
 				}
 			}
 		}
@@ -1156,13 +1135,7 @@ impl Library {
 		);
 	}
 
-	fn not_bound_functions(
-		&self,
-		env:&Env,
-		prefix:&str,
-		functions:&[Function],
-		kind:&str,
-	) {
+	fn not_bound_functions(&self, env: &Env, prefix: &str, functions: &[Function], kind: &str) {
 		for func in functions {
 			let version = func.deprecated_version;
 			let depr_version = version.unwrap_or(env.config.min_cfg_version);
@@ -1184,19 +1157,11 @@ impl Library {
 					if ty.is_basic() {
 						return None;
 					}
-					let full_name = format!(
-						"{}.{}",
-						self.namespaces[ns_id].name,
-						ty.get_name()
-					);
+					let full_name = format!("{}.{}", self.namespaces[ns_id].name, ty.get_name());
 					if env.type_status(&p.typ.full_name(&env.library)).ignored()
 						&& !env.analysis.objects.contains_key(&full_name)
 						&& !env.analysis.records.contains_key(&full_name)
-						&& !env
-							.config
-							.objects
-							.iter()
-							.any(|o| o.1.name == full_name)
+						&& !env.config.objects.iter().any(|o| o.1.name == full_name)
 					{
 						Some(full_name)
 					} else {
@@ -1212,23 +1177,11 @@ impl Library {
 					ns_id = n as usize;
 				}
 				if !ty.is_basic() {
-					let full_name = format!(
-						"{}.{}",
-						self.namespaces[ns_id].name,
-						ty.get_name()
-					);
-					if env
-						.type_status(&func.ret.typ.full_name(&env.library))
-						.ignored() && !env
-						.analysis
-						.objects
-						.contains_key(&full_name)
+					let full_name = format!("{}.{}", self.namespaces[ns_id].name, ty.get_name());
+					if env.type_status(&func.ret.typ.full_name(&env.library)).ignored()
+						&& !env.analysis.objects.contains_key(&full_name)
 						&& !env.analysis.records.contains_key(&full_name)
-						&& !env
-							.config
-							.objects
-							.iter()
-							.any(|o| o.1.name == full_name)
+						&& !env.config.objects.iter().any(|o| o.1.name == full_name)
 					{
 						errors.push(full_name);
 					}
@@ -1258,19 +1211,19 @@ impl Library {
 		}
 	}
 
-	pub fn namespace(&self, ns_id:u16) -> &Namespace {
+	pub fn namespace(&self, ns_id: u16) -> &Namespace {
 		&self.namespaces[ns_id as usize]
 	}
 
-	pub fn namespace_mut(&mut self, ns_id:u16) -> &mut Namespace {
+	pub fn namespace_mut(&mut self, ns_id: u16) -> &mut Namespace {
 		&mut self.namespaces[ns_id as usize]
 	}
 
-	pub fn find_namespace(&self, name:&str) -> Option<u16> {
+	pub fn find_namespace(&self, name: &str) -> Option<u16> {
 		self.index.get(name).copied()
 	}
 
-	pub fn add_namespace(&mut self, name:&str) -> u16 {
+	pub fn add_namespace(&mut self, name: &str) -> u16 {
 		if let Some(&id) = self.index.get(name) {
 			id
 		} else {
@@ -1281,47 +1234,38 @@ impl Library {
 		}
 	}
 
-	pub fn add_constant(&mut self, ns_id:u16, c:Constant) {
+	pub fn add_constant(&mut self, ns_id: u16, c: Constant) {
 		self.namespace_mut(ns_id).add_constant(c);
 	}
 
-	pub fn add_function(&mut self, ns_id:u16, f:Function) {
+	pub fn add_function(&mut self, ns_id: u16, f: Function) {
 		self.namespace_mut(ns_id).add_function(f);
 	}
 
-	pub fn add_type(&mut self, ns_id:u16, name:&str, typ:Type) -> TypeId {
-		TypeId { ns_id, id:self.namespace_mut(ns_id).add_type(name, Some(typ)) }
+	pub fn add_type(&mut self, ns_id: u16, name: &str, typ: Type) -> TypeId {
+		TypeId { ns_id, id: self.namespace_mut(ns_id).add_type(name, Some(typ)) }
 	}
 
 	#[allow(clippy::manual_map)]
-	pub fn find_type(&self, current_ns_id:u16, name:&str) -> Option<TypeId> {
+	pub fn find_type(&self, current_ns_id: u16, name: &str) -> Option<TypeId> {
 		let (mut ns, name) = split_namespace_name(name);
 		if name == "GType" {
 			ns = None;
 		}
 
 		if let Some(ns) = ns {
-			self.find_namespace(ns).and_then(|ns_id| {
-				self.namespace(ns_id)
-					.find_type(name)
-					.map(|id| TypeId { ns_id, id })
-			})
+			self.find_namespace(ns)
+				.and_then(|ns_id| self.namespace(ns_id).find_type(name).map(|id| TypeId { ns_id, id }))
 		} else if let Some(id) = self.namespace(current_ns_id).find_type(name) {
-			Some(TypeId { ns_id:current_ns_id, id })
-		} else if let Some(id) =
-			self.namespace(INTERNAL_NAMESPACE).find_type(name)
-		{
-			Some(TypeId { ns_id:INTERNAL_NAMESPACE, id })
+			Some(TypeId { ns_id: current_ns_id, id })
+		} else if let Some(id) = self.namespace(INTERNAL_NAMESPACE).find_type(name) {
+			Some(TypeId { ns_id: INTERNAL_NAMESPACE, id })
 		} else {
 			None
 		}
 	}
 
-	pub fn find_or_stub_type(
-		&mut self,
-		current_ns_id:u16,
-		name:&str,
-	) -> TypeId {
+	pub fn find_or_stub_type(&mut self, current_ns_id: u16, name: &str) -> TypeId {
 		if let Some(tid) = self.find_type(current_ns_id, name) {
 			return tid;
 		}
@@ -1329,54 +1273,48 @@ impl Library {
 		let (ns, name) = split_namespace_name(name);
 
 		if let Some(ns) = ns {
-			let ns_id = self
-				.find_namespace(ns)
-				.unwrap_or_else(|| self.add_namespace(ns));
+			let ns_id = self.find_namespace(ns).unwrap_or_else(|| self.add_namespace(ns));
 			let ns = self.namespace_mut(ns_id);
-			let id =
-				ns.find_type(name).unwrap_or_else(|| ns.add_type(name, None));
+			let id = ns.find_type(name).unwrap_or_else(|| ns.add_type(name, None));
 			return TypeId { ns_id, id };
 		}
 
 		let id = self.namespace_mut(current_ns_id).add_type(name, None);
-		TypeId { ns_id:current_ns_id, id }
+		TypeId { ns_id: current_ns_id, id }
 	}
 
-	pub fn type_(&self, tid:TypeId) -> &Type {
+	pub fn type_(&self, tid: TypeId) -> &Type {
 		self.namespace(tid.ns_id).type_(tid.id)
 	}
 
-	pub fn type_mut(&mut self, tid:TypeId) -> &mut Type {
+	pub fn type_mut(&mut self, tid: TypeId) -> &mut Type {
 		self.namespace_mut(tid.ns_id).type_mut(tid.id)
 	}
 
-	pub fn register_version(&mut self, ns_id:u16, version:Version) {
+	pub fn register_version(&mut self, ns_id: u16, version: Version) {
 		self.namespace_mut(ns_id).versions.insert(version);
 	}
 
-	pub fn types<'a>(
-		&'a self,
-	) -> Box<dyn Iterator<Item = (TypeId, &Type)> + 'a> {
+	pub fn types<'a>(&'a self) -> Box<dyn Iterator<Item = (TypeId, &Type)> + 'a> {
 		Box::new(self.namespaces.iter().enumerate().flat_map(|(ns_id, ns)| {
 			ns.types.iter().enumerate().filter_map(move |(id, type_)| {
-				let tid = TypeId { ns_id:ns_id as u16, id:id as u32 };
+				let tid = TypeId { ns_id: ns_id as u16, id: id as u32 };
 				type_.as_ref().map(|t| (tid, t))
 			})
 		}))
 	}
 
 	/// Types from a single namespace in alphabetical order.
-	pub fn namespace_types<'a>(
-		&'a self,
-		ns_id:u16,
-	) -> Box<dyn Iterator<Item = (TypeId, &Type)> + 'a> {
+	pub fn namespace_types<'a>(&'a self, ns_id: u16) -> Box<dyn Iterator<Item = (TypeId, &Type)> + 'a> {
 		let ns = self.namespace(ns_id);
-		Box::new(ns.index.values().map(move |&id| {
-			(TypeId { ns_id, id }, ns.types[id as usize].as_ref().unwrap())
-		}))
+		Box::new(
+			ns.index
+				.values()
+				.map(move |&id| (TypeId { ns_id, id }, ns.types[id as usize].as_ref().unwrap())),
+		)
 	}
 
-	pub fn is_crate(&self, crate_name:&str) -> bool {
+	pub fn is_crate(&self, crate_name: &str) -> bool {
 		self.namespace(MAIN_NAMESPACE).name == crate_name
 	}
 

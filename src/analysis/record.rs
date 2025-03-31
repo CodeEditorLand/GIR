@@ -2,12 +2,7 @@ use std::ops::Deref;
 
 use log::info;
 
-use super::{
-	imports::Imports,
-	info_base::InfoBase,
-	record_type::RecordType,
-	*,
-};
+use super::{imports::Imports, info_base::InfoBase, record_type::RecordType, *};
 use crate::{
 	config::{
 		derives::{Derive, Derives},
@@ -22,28 +17,27 @@ use crate::{
 
 #[derive(Debug, Default)]
 pub struct Info {
-	pub base:InfoBase,
-	pub glib_get_type:Option<(String, Option<Version>)>,
-	pub is_boxed:bool,
-	pub derives:Derives,
-	pub boxed_inline:bool,
-	pub init_function_expression:Option<String>,
-	pub copy_into_function_expression:Option<String>,
-	pub clear_function_expression:Option<String>,
+	pub base: InfoBase,
+	pub glib_get_type: Option<(String, Option<Version>)>,
+	pub is_boxed: bool,
+	pub derives: Derives,
+	pub boxed_inline: bool,
+	pub init_function_expression: Option<String>,
+	pub copy_into_function_expression: Option<String>,
+	pub clear_function_expression: Option<String>,
 }
 
 impl Deref for Info {
 	type Target = InfoBase;
 
-	fn deref(&self) -> &InfoBase { &self.base }
+	fn deref(&self) -> &InfoBase {
+		&self.base
+	}
 }
 
 impl Info {
 	// TODO: add test in tests/ for panic
-	pub fn type_<'a>(
-		&self,
-		library:&'a library::Library,
-	) -> &'a library::Record {
+	pub fn type_<'a>(&self, library: &'a library::Library) -> &'a library::Record {
 		let type_ = library
 			.type_(self.type_id)
 			.maybe_ref()
@@ -52,7 +46,7 @@ impl Info {
 	}
 }
 
-fn filter_derives(derives:&[Derive], names:&[&str]) -> Derives {
+fn filter_derives(derives: &[Derive], names: &[&str]) -> Derives {
 	derives
 		.iter()
 		.filter_map(|derive| {
@@ -64,10 +58,7 @@ fn filter_derives(derives:&[Derive], names:&[&str]) -> Derives {
 				.collect::<Vec<_>>();
 
 			if !new_names.is_empty() {
-				Some(Derive {
-					names:new_names,
-					cfg_condition:derive.cfg_condition.clone(),
-				})
+				Some(Derive { names: new_names, cfg_condition: derive.cfg_condition.clone() })
 			} else {
 				None
 			}
@@ -75,7 +66,7 @@ fn filter_derives(derives:&[Derive], names:&[&str]) -> Derives {
 		.collect()
 }
 
-pub fn new(env:&Env, obj:&GObject) -> Option<Info> {
+pub fn new(env: &Env, obj: &GObject) -> Option<Info> {
 	info!("Analyzing record {}", obj.name);
 	let full_name = obj.name.clone();
 
@@ -83,14 +74,11 @@ pub fn new(env:&Env, obj:&GObject) -> Option<Info> {
 
 	let type_ = env.type_(record_tid);
 
-	let name:String = split_namespace_name(&full_name).1.into();
+	let name: String = split_namespace_name(&full_name).1.into();
 
-	let record:&library::Record = type_.maybe_ref()?;
+	let record: &library::Record = type_.maybe_ref()?;
 
-	let is_boxed = matches!(
-		RecordType::of(record),
-		RecordType::Boxed | RecordType::AutoBoxed
-	);
+	let is_boxed = matches!(RecordType::of(record), RecordType::Boxed | RecordType::AutoBoxed);
 	let boxed_inline = obj.boxed_inline;
 
 	let mut imports = Imports::with_defined(&env.library, &name);
@@ -112,23 +100,20 @@ pub fn new(env:&Env, obj:&GObject) -> Option<Info> {
 	let version = obj.version.or(record.version);
 	let deprecated_version = record.deprecated_version;
 
-	let is_shared = specials.has_trait(special_functions::Type::Ref)
-		&& specials.has_trait(special_functions::Type::Unref);
+	let is_shared =
+		specials.has_trait(special_functions::Type::Ref) && specials.has_trait(special_functions::Type::Unref);
 	if is_shared {
 		// `copy` will duplicate a struct while `clone` just adds a reference
-		special_functions::unhide(
-			&mut functions,
-			&specials,
-			special_functions::Type::Copy,
-		);
+		special_functions::unhide(&mut functions, &specials, special_functions::Type::Copy);
 	};
 
 	let mut derives = if let Some(ref derives) = obj.derives {
 		if boxed_inline
 			&& !derives.is_empty()
-			&& !derives.iter().all(|ds| {
-				ds.names.is_empty() || ds.names.iter().all(|n| n == "Debug")
-			}) {
+			&& !derives
+				.iter()
+				.all(|ds| ds.names.is_empty() || ds.names.iter().all(|n| n == "Debug"))
+		{
 			panic!(
 				"Can't automatically derive traits other than `Debug` for \
 				 BoxedInline records"
@@ -137,7 +122,7 @@ pub fn new(env:&Env, obj:&GObject) -> Option<Info> {
 		derives.clone()
 	} else if !boxed_inline {
 		let derives = vec![Derive {
-			names:vec![
+			names: vec![
 				"Debug".into(),
 				"PartialEq".into(),
 				"Eq".into(),
@@ -145,7 +130,7 @@ pub fn new(env:&Env, obj:&GObject) -> Option<Info> {
 				"Ord".into(),
 				"Hash".into(),
 			],
-			cfg_condition:None,
+			cfg_condition: None,
 		}];
 
 		derives
@@ -157,10 +142,7 @@ pub fn new(env:&Env, obj:&GObject) -> Option<Info> {
 	for special in specials.traits().keys() {
 		match special {
 			special_functions::Type::Compare => {
-				derives = filter_derives(
-					&derives,
-					&["PartialOrd", "Ord", "PartialEq", "Eq"],
-				);
+				derives = filter_derives(&derives, &["PartialOrd", "Ord", "PartialEq", "Eq"]);
 			},
 			special_functions::Type::Equal => {
 				derives = filter_derives(&derives, &["PartialEq", "Eq"]);
@@ -176,8 +158,7 @@ pub fn new(env:&Env, obj:&GObject) -> Option<Info> {
 
 	let glib_get_type = if let Some(ref glib_get_type) = record.glib_get_type {
 		let configured_functions = obj.functions.matched("get_type");
-		let get_type_version =
-			configured_functions.iter().map(|f| f.version).max().flatten();
+		let get_type_version = configured_functions.iter().map(|f| f.version).max().flatten();
 
 		Some((glib_get_type.clone(), get_type_version))
 	} else {
@@ -187,8 +168,7 @@ pub fn new(env:&Env, obj:&GObject) -> Option<Info> {
 	// Check if we have to make use of the GType and the generic
 	// boxed functions.
 	if !is_shared
-		&& (!specials.has_trait(special_functions::Type::Copy)
-			|| !specials.has_trait(special_functions::Type::Free))
+		&& (!specials.has_trait(special_functions::Type::Copy) || !specials.has_trait(special_functions::Type::Free))
 	{
 		if let Some((_, get_type_version)) = glib_get_type {
 			// FIXME: Ideally we would update it here but that requires fixing
@@ -213,16 +193,16 @@ pub fn new(env:&Env, obj:&GObject) -> Option<Info> {
 
 	let base = InfoBase {
 		full_name,
-		type_id:record_tid,
+		type_id: record_tid,
 		name,
 		functions,
 		specials,
 		imports,
 		version,
 		deprecated_version,
-		cfg_condition:obj.cfg_condition.clone(),
-		concurrency:obj.concurrency,
-		visibility:obj.visibility,
+		cfg_condition: obj.cfg_condition.clone(),
+		concurrency: obj.concurrency,
+		visibility: obj.visibility,
 	};
 
 	let info = Info {
@@ -231,9 +211,9 @@ pub fn new(env:&Env, obj:&GObject) -> Option<Info> {
 		derives,
 		is_boxed,
 		boxed_inline,
-		init_function_expression:obj.init_function_expression.clone(),
-		copy_into_function_expression:obj.copy_into_function_expression.clone(),
-		clear_function_expression:obj.clear_function_expression.clone(),
+		init_function_expression: obj.init_function_expression.clone(),
+		copy_into_function_expression: obj.copy_into_function_expression.clone(),
+		clear_function_expression: obj.clear_function_expression.clone(),
 	};
 
 	Some(info)

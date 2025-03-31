@@ -7,7 +7,7 @@ use std::{
 use general::{cfg_condition, version_condition};
 
 use crate::{
-	config::{gobjects::GObject, WorkMode},
+	config::{WorkMode, gobjects::GObject},
 	env::Env,
 	file_saver::*,
 	library::Member,
@@ -47,7 +47,7 @@ mod trampoline_to_glib;
 pub mod translate_from_glib;
 pub mod translate_to_glib;
 
-pub fn generate(env:&Env) {
+pub fn generate(env: &Env) {
 	match env.config.work_mode {
 		WorkMode::Normal => normal_generate(env),
 		WorkMode::Sys => sys::generate(env),
@@ -56,10 +56,10 @@ pub fn generate(env:&Env) {
 	}
 }
 
-fn normal_generate(env:&Env) {
-	let mut mod_rs:Vec<String> = Vec::new();
-	let mut traits:Vec<String> = Vec::new();
-	let mut builders:Vec<String> = Vec::new();
+fn normal_generate(env: &Env) {
+	let mut mod_rs: Vec<String> = Vec::new();
+	let mut traits: Vec<String> = Vec::new();
+	let mut builders: Vec<String> = Vec::new();
 	let root_path = env.config.auto_path.as_path();
 
 	generate_single_version_file(env);
@@ -74,13 +74,7 @@ fn normal_generate(env:&Env) {
 	generate_mod_rs(env, root_path, &mod_rs, &traits, &builders);
 }
 
-pub fn generate_mod_rs(
-	env:&Env,
-	root_path:&Path,
-	mod_rs:&[String],
-	traits:&[String],
-	builders:&[String],
-) {
+pub fn generate_mod_rs(env: &Env, root_path: &Path, mod_rs: &[String], traits: &[String], builders: &[String]) {
 	let path = root_path.join("mod.rs");
 	save_to_file(path, env.config.make_backup, |w| {
 		general::start_comments(w, &env.config)?;
@@ -101,7 +95,7 @@ pub fn generate_mod_rs(
 	});
 }
 
-pub fn generate_single_version_file(env:&Env) {
+pub fn generate_single_version_file(env: &Env) {
 	if let Some(ref path) = env.config.single_version_file {
 		save_to_file(path, env.config.make_backup, |w| {
 			general::single_version_file(w, &env.config, "")
@@ -109,18 +103,14 @@ pub fn generate_single_version_file(env:&Env) {
 	}
 }
 
-pub fn generate_default_impl<
-	'a,
-	D:Display,
-	F:Fn(&'a Member) -> Option<(Option<Version>, Option<&'a String>, D)>,
->(
-	w:&mut dyn Write,
-	env:&Env,
-	config:&GObject,
-	type_name:&str,
-	type_version:Option<Version>,
-	mut members:impl Iterator<Item = &'a Member>,
-	callback:F,
+pub fn generate_default_impl<'a, D: Display, F: Fn(&'a Member) -> Option<(Option<Version>, Option<&'a String>, D)>>(
+	w: &mut dyn Write,
+	env: &Env,
+	config: &GObject,
+	type_name: &str,
+	type_version: Option<Version>,
+	mut members: impl Iterator<Item = &'a Member>,
+	callback: F,
 ) -> Result<()> {
 	if let Some(ref default_value) = config.default_value {
 		let member = match members.find(|m| m.name == *default_value) {

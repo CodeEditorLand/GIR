@@ -10,7 +10,9 @@ pub enum Visibility {
 }
 
 impl Visibility {
-	pub fn is_public(self) -> bool { self == Self::Public }
+	pub fn is_public(self) -> bool {
+		self == Self::Public
+	}
 
 	pub fn export_visibility(self) -> &'static str {
 		match self {
@@ -23,7 +25,7 @@ impl Visibility {
 }
 
 impl fmt::Display for Visibility {
-	fn fmt(&self, f:&mut fmt::Formatter<'_>) -> fmt::Result {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		f.write_str(self.export_visibility())
 	}
 }
@@ -34,7 +36,7 @@ pub struct ParseVisibilityError(String);
 impl std::error::Error for ParseVisibilityError {}
 
 impl fmt::Display for ParseVisibilityError {
-	fn fmt(&self, f:&mut fmt::Formatter<'_>) -> fmt::Result {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		write!(f, "{}", self.0)
 	}
 }
@@ -42,17 +44,13 @@ impl fmt::Display for ParseVisibilityError {
 impl FromStr for Visibility {
 	type Err = ParseVisibilityError;
 
-	fn from_str(s:&str) -> Result<Self, Self::Err> {
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		match s {
 			"pub" => Ok(Self::Public),
 			"super" => Ok(Self::Super),
 			"private" => Ok(Self::Private),
 			"crate" => Ok(Self::Crate),
-			e => {
-				Err(ParseVisibilityError(format!(
-					"Wrong visibility type '{e}'"
-				)))
-			},
+			e => Err(ParseVisibilityError(format!("Wrong visibility type '{e}'"))),
 		}
 	}
 }

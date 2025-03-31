@@ -5,11 +5,11 @@ use log::info;
 use crate::{env::Env, file_saver::*, nameutil::*};
 
 pub fn generate(
-	env:&Env,
-	root_path:&Path,
-	mod_rs:&mut Vec<String>,
-	traits:&mut Vec<String>,
-	builders:&mut Vec<String>,
+	env: &Env,
+	root_path: &Path,
+	mod_rs: &mut Vec<String>,
+	traits: &mut Vec<String>,
+	builders: &mut Vec<String>,
 ) {
 	info!("Generate objects");
 	for class_analysis in env.analysis.objects.values() {
@@ -18,9 +18,10 @@ pub fn generate(
 			continue;
 		}
 
-		let mod_name = obj.module_name.clone().unwrap_or_else(|| {
-			module_name(split_namespace_name(&class_analysis.full_name).1)
-		});
+		let mod_name = obj
+			.module_name
+			.clone()
+			.unwrap_or_else(|| module_name(split_namespace_name(&class_analysis.full_name).1));
 
 		let mut path = root_path.join(&mod_name);
 		path.set_extension("rs");
@@ -30,13 +31,6 @@ pub fn generate(
 			super::object::generate(w, env, class_analysis)
 		});
 
-		super::object::generate_reexports(
-			env,
-			class_analysis,
-			&mod_name,
-			mod_rs,
-			traits,
-			builders,
-		);
+		super::object::generate_reexports(env, class_analysis, &mod_name, mod_rs, traits, builders);
 	}
 }

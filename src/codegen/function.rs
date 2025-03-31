@@ -9,30 +9,21 @@ use log::warn;
 use super::{
 	function_body_chunk,
 	general::{
-		allow_deprecated,
-		cfg_condition,
-		cfg_deprecated,
-		doc_alias,
-		doc_hidden,
-		not_version_condition,
+		allow_deprecated, cfg_condition, cfg_deprecated, doc_alias, doc_hidden, not_version_condition,
 		version_condition,
 	},
 	parameter::ToParameter,
-	return_value::{
-		out_parameter_types,
-		out_parameters_as_return,
-		ToReturnValue,
-	},
+	return_value::{ToReturnValue, out_parameter_types, out_parameters_as_return},
 	special_functions,
 };
 use crate::{
 	analysis::{self, bounds::Bounds, try_from_glib::TryFromGlib},
-	chunk::{ffi_function_todo, Chunk},
+	chunk::{Chunk, ffi_function_todo},
 	env::Env,
 	library::{self, TypeId},
 	nameutil::use_glib_type,
 	version::Version,
-	writer::{primitives::tabs, safety_assertion_mode_to_str, ToCode},
+	writer::{ToCode, primitives::tabs, safety_assertion_mode_to_str},
 };
 
 // We follow the rules of the `return_self_not_must_use` clippy lint:
@@ -40,9 +31,9 @@ use crate::{
 // If `Self` is returned (so `-> Self`) in a method (whatever the form of the
 // `self`), then the `#[must_use]` attribute must be added.
 pub fn get_must_use_if_needed(
-	parent_type_id:Option<TypeId>,
-	analysis:&analysis::functions::Info,
-	comment_prefix:&str,
+	parent_type_id: Option<TypeId>,
+	analysis: &analysis::functions::Info,
+	comment_prefix: &str,
 ) -> Option<String> {
 	// If there is no parent, it means it's not a (trait) method so we're not
 	// interested.
@@ -63,15 +54,15 @@ pub fn get_must_use_if_needed(
 }
 
 pub fn generate(
-	w:&mut dyn Write,
-	env:&Env,
-	parent_type_id:Option<TypeId>,
-	analysis:&analysis::functions::Info,
-	special_functions:Option<&analysis::special_functions::Infos>,
-	scope_version:Option<Version>,
-	in_trait:bool,
-	only_declaration:bool,
-	indent:usize,
+	w: &mut dyn Write,
+	env: &Env,
+	parent_type_id: Option<TypeId>,
+	analysis: &analysis::functions::Info,
+	special_functions: Option<&analysis::special_functions::Infos>,
+	scope_version: Option<Version>,
+	in_trait: bool,
+	only_declaration: bool,
+	indent: usize,
 ) -> Result<()> {
 	if !analysis.status.need_generate() {
 		return Ok(());
@@ -82,13 +73,7 @@ pub fn generate(
 	}
 
 	if let Some(special_functions) = special_functions {
-		if special_functions::generate(
-			w,
-			env,
-			analysis,
-			special_functions,
-			scope_version,
-		)? {
+		if special_functions::generate(w, env, analysis, special_functions, scope_version)? {
 			return Ok(());
 		}
 	}
@@ -99,25 +84,14 @@ pub fn generate(
 
 	let commented = analysis.commented;
 	let comment_prefix = if commented { "//" } else { "" };
-	let pub_prefix = if in_trait {
-		String::new()
-	} else {
-		format!("{} ", analysis.visibility)
-	};
+	let pub_prefix = if in_trait { String::new() } else { format!("{} ", analysis.visibility) };
 
 	let unsafe_ = if analysis.unsafe_ { "unsafe " } else { "" };
 	let declaration = declaration(env, analysis);
 	let suffix = if only_declaration { ";" } else { " {" };
 
 	writeln!(w)?;
-	cfg_deprecated(
-		w,
-		env,
-		None,
-		analysis.deprecated_version,
-		commented,
-		indent,
-	)?;
+	cfg_deprecated(w, env, None, analysis.deprecated_version, commented, indent)?;
 	cfg_condition(w, analysis.cfg_condition.as_ref(), commented, indent)?;
 	let version = Version::if_stricter_than(analysis.version, scope_version);
 	version_condition(w, env, None, version, commented, indent)?;
@@ -140,19 +114,14 @@ pub fn generate(
 		}
 	}
 	// Don't add a guard for public or copy/equal functions
-	let dead_code_cfg =
-		if !analysis.visibility.is_public() && !analysis.is_special() {
-			"#[allow(dead_code)]"
-		} else {
-			""
-		};
+	let dead_code_cfg = if !analysis.visibility.is_public() && !analysis.is_special() {
+		"#[allow(dead_code)]"
+	} else {
+		""
+	};
 
 	let allow_should_implement_trait = if analysis.codegen_name() == "default" {
-		format!(
-			"{}{}#[allow(clippy::should_implement_trait)]",
-			tabs(indent),
-			comment_prefix
-		)
+		format!("{}{}#[allow(clippy::should_implement_trait)]", tabs(indent), comment_prefix)
 	} else {
 		String::new()
 	};
@@ -162,8 +131,7 @@ pub fn generate(
 		"{}{}{}{}{}{}{}{}{}",
 		allow_should_implement_trait,
 		dead_code_cfg,
-		get_must_use_if_needed(parent_type_id, analysis, comment_prefix)
-			.unwrap_or_default(),
+		get_must_use_if_needed(parent_type_id, analysis, comment_prefix).unwrap_or_default(),
 		tabs(indent),
 		comment_prefix,
 		pub_prefix,
@@ -184,14 +152,7 @@ pub fn generate(
 		let suffix = if only_declaration { ";" } else { " {" };
 
 		writeln!(w)?;
-		cfg_deprecated(
-			w,
-			env,
-			None,
-			analysis.deprecated_version,
-			commented,
-			indent,
-		)?;
+		cfg_deprecated(w, env, None, analysis.deprecated_version, commented, indent)?;
 
 		writeln!(w, "{}{}", tabs(indent), comment_prefix)?;
 		cfg_condition(w, analysis.cfg_condition.as_ref(), commented, indent)?;
@@ -225,7 +186,7 @@ pub fn generate(
 	Ok(())
 }
 
-pub fn declaration(env:&Env, analysis:&analysis::functions::Info) -> String {
+pub fn declaration(env: &Env, analysis: &analysis::functions::Info) -> String {
 	let outs_as_return = !analysis.outs.is_empty();
 	let return_str = if outs_as_return {
 		out_parameters_as_return(env, analysis)
@@ -257,34 +218,24 @@ pub fn declaration(env:&Env, analysis:&analysis::functions::Info) -> String {
 		param_str.push_str(&s);
 	}
 
-	format!(
-		"fn {}{}({}){}",
-		analysis.codegen_name(),
-		bounds,
-		param_str,
-		return_str,
-	)
+	format!("fn {}{}({}){}", analysis.codegen_name(), bounds, param_str, return_str,)
 }
 
-pub fn declaration_futures(
-	env:&Env,
-	analysis:&analysis::functions::Info,
-) -> String {
+pub fn declaration_futures(env: &Env, analysis: &analysis::functions::Info) -> String {
 	let async_future = analysis.async_future.as_ref().unwrap();
 
-	let return_str =
-		if let Some(ref error_parameters) = async_future.error_parameters {
-			format!(
-				" -> Pin<Box_<dyn std::future::Future<Output = Result<{}, \
+	let return_str = if let Some(ref error_parameters) = async_future.error_parameters {
+		format!(
+			" -> Pin<Box_<dyn std::future::Future<Output = Result<{}, \
 				 {}>> + 'static>>",
-				async_future.success_parameters, error_parameters
-			)
-		} else {
-			format!(
-				" -> Pin<Box_<dyn std::future::Future<Output = {}> + 'static>>",
-				async_future.success_parameters
-			)
-		};
+			async_future.success_parameters, error_parameters
+		)
+	} else {
+		format!(
+			" -> Pin<Box_<dyn std::future::Future<Output = {}> + 'static>>",
+			async_future.success_parameters
+		)
+	};
 
 	let mut param_str = String::with_capacity(100);
 
@@ -313,18 +264,12 @@ pub fn declaration_futures(
 		param_str.push_str(&s);
 	}
 
-	let (bounds, _) =
-		bounds(&analysis.bounds, skipped_bounds.as_ref(), true, false);
+	let (bounds, _) = bounds(&analysis.bounds, skipped_bounds.as_ref(), true, false);
 
 	format!("fn {}{}({}){}", async_future.name, bounds, param_str, return_str,)
 }
 
-pub fn bounds(
-	bounds:&Bounds,
-	skip:&[char],
-	r#async:bool,
-	filter_callback_modified:bool,
-) -> (String, Vec<String>) {
+pub fn bounds(bounds: &Bounds, skip: &[char], r#async: bool, filter_callback_modified: bool) -> (String, Vec<String>) {
 	use crate::analysis::bounds::BoundType::*;
 
 	if bounds.is_empty() {
@@ -355,9 +300,7 @@ pub fn bounds(
 	let type_names = lifetimes
 		.iter()
 		.cloned()
-		.chain(
-			bounds.clone().filter_map(|b| b.type_parameter_definition(r#async)),
-		)
+		.chain(bounds.clone().filter_map(|b| b.type_parameter_definition(r#async)))
 		.collect::<Vec<_>>();
 
 	let type_names = if type_names.is_empty() {
@@ -376,11 +319,7 @@ pub fn bounds(
 	(type_names, bounds)
 }
 
-pub fn body_chunk(
-	env:&Env,
-	analysis:&analysis::functions::Info,
-	parent_type_id:Option<TypeId>,
-) -> Chunk {
+pub fn body_chunk(env: &Env, analysis: &analysis::functions::Info, parent_type_id: Option<TypeId>) -> Chunk {
 	if analysis.commented {
 		return ffi_function_todo(env, &analysis.glib_name);
 	}
@@ -406,10 +345,7 @@ pub fn body_chunk(
 		if let Some(ref trampoline) = analysis.trampoline {
 			builder.async_trampoline(trampoline);
 		} else {
-			warn!(
-				"Async function {} has no associated _finish function",
-				analysis.codegen_name(),
-			);
+			warn!("Async function {} has no associated _finish function", analysis.codegen_name(),);
 		}
 	} else {
 		for trampoline in &analysis.callbacks {
@@ -421,9 +357,7 @@ pub fn body_chunk(
 	}
 
 	for par in &analysis.parameters.c_parameters {
-		if outs_as_return
-			&& analysis.outs.iter().any(|out| out.lib_par.name == par.name)
-		{
+		if outs_as_return && analysis.outs.iter().any(|out| out.lib_par.name == par.name) {
 			builder.out_parameter(env, par);
 		} else {
 			builder.parameter();
@@ -435,10 +369,7 @@ pub fn body_chunk(
 	builder.generate(env, &bounds, &bounds_names.join(", "))
 }
 
-pub fn body_chunk_futures(
-	env:&Env,
-	analysis:&analysis::functions::Info,
-) -> StdResult<String, fmt::Error> {
+pub fn body_chunk_futures(env: &Env, analysis: &analysis::functions::Info) -> StdResult<String, fmt::Error> {
 	use std::fmt::Write;
 
 	use crate::analysis::ref_mode::RefMode;
@@ -455,11 +386,7 @@ pub fn body_chunk_futures(
 	writeln!(body)?;
 
 	if !async_future.assertion.is_none() {
-		writeln!(
-			body,
-			"{}",
-			safety_assertion_mode_to_str(async_future.assertion)
-		)?;
+		writeln!(body, "{}", safety_assertion_mode_to_str(async_future.assertion))?;
 	}
 	let skip = usize::from(async_future.is_method);
 
@@ -472,18 +399,13 @@ pub fn body_chunk_futures(
 		let c_par = &analysis.parameters.c_parameters[par.ind_c];
 
 		let type_ = env.type_(par.typ);
-		let is_str =
-			matches!(type_, library::Type::Basic(library::Basic::Utf8));
+		let is_str = matches!(type_, library::Type::Basic(library::Basic::Utf8));
 		let is_slice = matches!(type_, library::Type::CArray(_));
 
 		if is_slice {
 			writeln!(body, "let {} = {}.to_vec();", par.name, par.name)?;
 		} else if *c_par.nullable {
-			writeln!(
-				body,
-				"let {} = {}.map(ToOwned::to_owned);",
-				par.name, par.name
-			)?;
+			writeln!(body, "let {} = {}.map(ToOwned::to_owned);", par.name, par.name)?;
 		} else if is_str {
 			writeln!(body, "let {} = String::from({});", par.name, par.name)?;
 		} else if c_par.ref_mode != RefMode::None {
@@ -523,11 +445,7 @@ pub fn body_chunk_futures(
 			let c_par = &analysis.parameters.c_parameters[par.ind_c];
 
 			if *c_par.nullable {
-				writeln!(
-					body,
-					"\t\t{}.as_ref().map(::std::borrow::Borrow::borrow),",
-					par.name
-				)?;
+				writeln!(body, "\t\t{}.as_ref().map(::std::borrow::Borrow::borrow),", par.name)?;
 			} else if c_par.ref_mode != RefMode::None {
 				writeln!(body, "\t\t&{},", par.name)?;
 			} else {

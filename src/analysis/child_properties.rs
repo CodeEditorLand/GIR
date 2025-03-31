@@ -17,28 +17,28 @@ use crate::{
 
 #[derive(Clone, Debug)]
 pub struct ChildProperty {
-	pub name:String,
-	pub prop_name:String,
-	pub getter_name:String,
-	pub typ:library::TypeId,
-	pub child_name:String,
-	pub child_type:Option<library::TypeId>,
-	pub nullable:library::Nullable,
-	pub get_out_ref_mode:RefMode,
-	pub set_in_ref_mode:RefMode,
-	pub doc_hidden:bool,
-	pub set_params:String,
-	pub bounds:String,
-	pub to_glib_extra:String,
+	pub name: String,
+	pub prop_name: String,
+	pub getter_name: String,
+	pub typ: library::TypeId,
+	pub child_name: String,
+	pub child_type: Option<library::TypeId>,
+	pub nullable: library::Nullable,
+	pub get_out_ref_mode: RefMode,
+	pub set_in_ref_mode: RefMode,
+	pub doc_hidden: bool,
+	pub set_params: String,
+	pub bounds: String,
+	pub to_glib_extra: String,
 }
 
 pub type ChildProperties = Vec<ChildProperty>;
 
 pub fn analyze(
-	env:&Env,
-	config:Option<&config::ChildProperties>,
-	type_tid:library::TypeId,
-	imports:&mut Imports,
+	env: &Env,
+	config: Option<&config::ChildProperties>,
+	type_tid: library::TypeId,
+	imports: &mut Imports,
 ) -> ChildProperties {
 	let mut properties = Vec::new();
 	if config.is_none() {
@@ -46,30 +46,23 @@ pub fn analyze(
 	}
 	let config = config.unwrap();
 	let child_name = config.child_name.as_ref().map_or("child", |s| s.as_str());
-	let child_type = config
-		.child_type
-		.as_ref()
-		.and_then(|name| env.library.find_type(0, name));
+	let child_type = config.child_type.as_ref().and_then(|name| env.library.find_type(0, name));
 	if config.child_type.is_some() && child_type.is_none() {
 		let owner_name = RustType::try_new(env, type_tid).into_string();
-		let child_type:&str = config.child_type.as_ref().unwrap();
+		let child_type: &str = config.child_type.as_ref().unwrap();
 		error!("Bad child type `{}` for `{}`", child_type, owner_name);
 		return properties;
 	}
 
 	for prop in &config.properties {
-		if let Some(prop) = analyze_property(
-			env, prop, child_name, child_type, type_tid, config, imports,
-		) {
+		if let Some(prop) = analyze_property(env, prop, child_name, child_type, type_tid, config, imports) {
 			properties.push(prop);
 		}
 	}
 
 	if !properties.is_empty() {
 		imports.add("glib::prelude::*");
-		if let Some(rust_type) =
-			child_type.and_then(|typ| RustType::try_new(env, typ).ok())
-		{
+		if let Some(rust_type) = child_type.and_then(|typ| RustType::try_new(env, typ).ok()) {
 			imports.add_used_types(rust_type.used_types());
 		}
 	}
@@ -78,13 +71,13 @@ pub fn analyze(
 }
 
 fn analyze_property(
-	env:&Env,
-	prop:&config::ChildProperty,
-	child_name:&str,
-	child_type:Option<library::TypeId>,
-	type_tid:library::TypeId,
-	config:&config::ChildProperties,
-	imports:&mut Imports,
+	env: &Env,
+	prop: &config::ChildProperty,
+	child_name: &str,
+	child_type: Option<library::TypeId>,
+	type_tid: library::TypeId,
+	config: &config::ChildProperties,
+	imports: &mut Imports,
 ) -> Option<ChildProperty> {
 	let name = prop.name.clone();
 	let prop_name = nameutil::signal_to_snake(&prop.name);
@@ -104,19 +97,16 @@ fn analyze_property(
 			imports.add_used_types(rust_type.used_types());
 		}
 
-		let get_out_ref_mode =
-			RefMode::of(env, typ, library::ParameterDirection::Return);
+		let get_out_ref_mode = RefMode::of(env, typ, library::ParameterDirection::Return);
 		if !is_getter_renamed {
-			if let Ok(new_name) = getter_rules::try_rename_getter_suffix(
-				&getter_name,
-				typ == library::TypeId::tid_bool(),
-			) {
+			if let Ok(new_name) =
+				getter_rules::try_rename_getter_suffix(&getter_name, typ == library::TypeId::tid_bool())
+			{
 				getter_name = new_name.unwrap();
 			}
 		}
 
-		let mut set_in_ref_mode =
-			RefMode::of(env, typ, library::ParameterDirection::In);
+		let mut set_in_ref_mode = RefMode::of(env, typ, library::ParameterDirection::In);
 		if set_in_ref_mode == RefMode::ByRefMut {
 			set_in_ref_mode = RefMode::ByRef;
 		}
@@ -131,11 +121,11 @@ fn analyze_property(
 				.into_string();
 
 			let _bound = Bound {
-				bound_type:bound,
-				parameter_name:TYPE_PARAMETERS_START.to_string(),
-				alias:Some(TYPE_PARAMETERS_START.to_owned()),
-				type_str:r_type,
-				callback_modified:false,
+				bound_type: bound,
+				parameter_name: TYPE_PARAMETERS_START.to_string(),
+				alias: Some(TYPE_PARAMETERS_START.to_owned()),
+				type_str: r_type,
+				callback_modified: false,
 			};
 			// TODO: bounds_str push?!?!
 			bounds_str.push_str("TODO");
@@ -167,15 +157,15 @@ fn analyze_property(
 			prop_name,
 			getter_name,
 			typ,
-			child_name:child_name.to_owned(),
+			child_name: child_name.to_owned(),
 			child_type,
 			nullable,
 			get_out_ref_mode,
 			set_in_ref_mode,
 			doc_hidden,
 			set_params,
-			bounds:bounds_str,
-			to_glib_extra:String::new(),
+			bounds: bounds_str,
+			to_glib_extra: String::new(),
 		})
 	} else {
 		let owner_name = RustType::try_new(env, type_tid).into_string();

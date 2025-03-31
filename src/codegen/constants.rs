@@ -2,20 +2,12 @@ use std::path::Path;
 
 use crate::{
 	analysis::imports::Imports,
-	codegen::general::{
-		self,
-		cfg_condition,
-		cfg_deprecated,
-		doc_alias,
-		version_condition,
-		version_condition_string,
-	},
+	codegen::general::{self, cfg_condition, cfg_deprecated, doc_alias, version_condition, version_condition_string},
 	env::Env,
-	file_saver,
-	library,
+	file_saver, library,
 };
 
-pub fn generate(env:&Env, root_path:&Path, mod_rs:&mut Vec<String>) {
+pub fn generate(env: &Env, root_path: &Path, mod_rs: &mut Vec<String>) {
 	let path = root_path.join("constants.rs");
 	let mut imports = Imports::new(&env.library);
 
@@ -37,14 +29,7 @@ pub fn generate(env:&Env, root_path:&Path, mod_rs:&mut Vec<String>) {
 		for constant in &env.analysis.constants {
 			let type_ = env.type_(constant.typ);
 			if let library::Type::Basic(library::Basic::Utf8) = type_ {
-				cfg_deprecated(
-					w,
-					env,
-					None,
-					constant.deprecated_version,
-					false,
-					0,
-				)?;
+				cfg_deprecated(w, env, None, constant.deprecated_version, false, 0)?;
 				cfg_condition(w, constant.cfg_condition.as_ref(), false, 0)?;
 				version_condition(w, env, None, constant.version, false, 0)?;
 				doc_alias(w, &constant.glib_name, "", 0)?;
@@ -57,21 +42,12 @@ pub fn generate(env:&Env, root_path:&Path, mod_rs:&mut Vec<String>) {
 					name = constant.name,
 					c_id = constant.glib_name
 				)?;
-				if let Some(cfg) = version_condition_string(
-					env,
-					None,
-					constant.version,
-					false,
-					0,
-				) {
+				if let Some(cfg) = version_condition_string(env, None, constant.version, false, 0) {
 					mod_rs.push(cfg);
 				}
 				mod_rs.push(format!(
 					"{}pub use self::constants::{};",
-					constant
-						.deprecated_version
-						.map(|_| "#[allow(deprecated)]\n")
-						.unwrap_or(""),
+					constant.deprecated_version.map(|_| "#[allow(deprecated)]\n").unwrap_or(""),
 					constant.name
 				));
 			}

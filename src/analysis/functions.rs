@@ -15,13 +15,7 @@ use crate::{
 	analysis::{
 		self,
 		bounds::{Bounds, CallbackInfo},
-		function_parameters::{
-			self,
-			CParameter,
-			Parameters,
-			Transformation,
-			TransformationType,
-		},
+		function_parameters::{self, CParameter, Parameters, Transformation, TransformationType},
 		imports::Imports,
 		is_gpointer,
 		out_parameters::{self, use_function_return_for_result},
@@ -35,16 +29,7 @@ use crate::{
 	codegen::Visibility,
 	config::{self, gobjects::GStatus},
 	env::Env,
-	library::{
-		self,
-		Function,
-		FunctionKind,
-		ParameterDirection,
-		ParameterScope,
-		Transfer,
-		Type,
-		MAIN_NAMESPACE,
-	},
+	library::{self, Function, FunctionKind, MAIN_NAMESPACE, ParameterDirection, ParameterScope, Transfer, Type},
 	nameutil,
 	traits::*,
 	version::Version,
@@ -52,66 +37,66 @@ use crate::{
 
 #[derive(Clone, Debug)]
 pub struct AsyncTrampoline {
-	pub is_method:bool,
-	pub has_error_parameter:bool,
-	pub name:String,
-	pub finish_func_name:String,
-	pub callback_type:String,
-	pub bound_name:char,
-	pub output_params:Vec<analysis::Parameter>,
-	pub ffi_ret:Option<analysis::Parameter>,
+	pub is_method: bool,
+	pub has_error_parameter: bool,
+	pub name: String,
+	pub finish_func_name: String,
+	pub callback_type: String,
+	pub bound_name: char,
+	pub output_params: Vec<analysis::Parameter>,
+	pub ffi_ret: Option<analysis::Parameter>,
 }
 
 #[derive(Clone, Debug)]
 pub struct AsyncFuture {
-	pub is_method:bool,
-	pub name:String,
-	pub success_parameters:String,
-	pub error_parameters:Option<String>,
-	pub assertion:SafetyAssertionMode,
+	pub is_method: bool,
+	pub name: String,
+	pub success_parameters: String,
+	pub error_parameters: Option<String>,
+	pub assertion: SafetyAssertionMode,
 }
 
 #[derive(Debug)]
 pub struct Info {
-	pub name:String,
-	pub func_name:String,
-	pub new_name:Option<String>,
-	pub glib_name:String,
-	pub status:GStatus,
-	pub kind:library::FunctionKind,
-	pub visibility:Visibility,
-	pub type_name:Result,
-	pub parameters:Parameters,
-	pub ret:return_value::Info,
-	pub bounds:Bounds,
-	pub outs:out_parameters::Info,
-	pub version:Option<Version>,
-	pub deprecated_version:Option<Version>,
-	pub not_version:Option<Version>,
-	pub cfg_condition:Option<String>,
-	pub assertion:SafetyAssertionMode,
-	pub doc_hidden:bool,
-	pub doc_trait_name:Option<String>,
-	pub doc_struct_name:Option<String>,
-	pub doc_ignore_parameters:HashSet<String>,
-	pub r#async:bool,
-	pub unsafe_:bool,
-	pub trampoline:Option<AsyncTrampoline>,
-	pub callbacks:Vec<Trampoline>,
-	pub destroys:Vec<Trampoline>,
-	pub remove_params:Vec<usize>,
-	pub async_future:Option<AsyncFuture>,
+	pub name: String,
+	pub func_name: String,
+	pub new_name: Option<String>,
+	pub glib_name: String,
+	pub status: GStatus,
+	pub kind: library::FunctionKind,
+	pub visibility: Visibility,
+	pub type_name: Result,
+	pub parameters: Parameters,
+	pub ret: return_value::Info,
+	pub bounds: Bounds,
+	pub outs: out_parameters::Info,
+	pub version: Option<Version>,
+	pub deprecated_version: Option<Version>,
+	pub not_version: Option<Version>,
+	pub cfg_condition: Option<String>,
+	pub assertion: SafetyAssertionMode,
+	pub doc_hidden: bool,
+	pub doc_trait_name: Option<String>,
+	pub doc_struct_name: Option<String>,
+	pub doc_ignore_parameters: HashSet<String>,
+	pub r#async: bool,
+	pub unsafe_: bool,
+	pub trampoline: Option<AsyncTrampoline>,
+	pub callbacks: Vec<Trampoline>,
+	pub destroys: Vec<Trampoline>,
+	pub remove_params: Vec<usize>,
+	pub async_future: Option<AsyncFuture>,
 	/// Whether the function is hidden (an implementation detail)
 	/// Like the ref/unref/copy/free functions
-	pub hidden:bool,
+	pub hidden: bool,
 	/// Whether the function can't be generated
-	pub commented:bool,
+	pub commented: bool,
 	/// In order to generate docs links we need to know in which namespace
 	/// this potential global function is defined
-	pub ns_id:NsId,
-	pub generate_doc:bool,
-	pub get_property:Option<String>,
-	pub set_property:Option<String>,
+	pub ns_id: NsId,
+	pub generate_doc: bool,
+	pub get_property: Option<String>,
+	pub set_property: Option<String>,
 }
 
 impl Info {
@@ -128,23 +113,15 @@ impl Info {
 	}
 
 	// returns whether the method can be linked in the docs
-	pub fn should_be_doc_linked(&self, env:&Env) -> bool {
-		self.should_docs_be_generated(env)
-			&& (self.status.manual() || (!self.commented && !self.hidden))
+	pub fn should_be_doc_linked(&self, env: &Env) -> bool {
+		self.should_docs_be_generated(env) && (self.status.manual() || (!self.commented && !self.hidden))
 	}
 
-	pub fn should_docs_be_generated(&self, env:&Env) -> bool {
-		!self.status.ignored()
-			&& !self.is_special()
-			&& !self.is_async_finish(env)
+	pub fn should_docs_be_generated(&self, env: &Env) -> bool {
+		!self.status.ignored() && !self.is_special() && !self.is_async_finish(env)
 	}
 
-	pub fn doc_link(
-		&self,
-		parent:Option<&str>,
-		visible_parent:Option<&str>,
-		is_self:bool,
-	) -> String {
+	pub fn doc_link(&self, parent: Option<&str>, visible_parent: Option<&str>, is_self: bool) -> String {
 		if let Some(p) = parent {
 			if is_self {
 				format!("[`{f}()`][Self::{f}()]", f = self.codegen_name())
@@ -157,32 +134,30 @@ impl Info {
 				)
 			}
 		} else {
-			format!(
-				"[`{fn_name}()`][crate::{fn_name}()]",
-				fn_name = self.codegen_name()
-			)
+			format!("[`{fn_name}()`][crate::{fn_name}()]", fn_name = self.codegen_name())
 		}
 	}
 
-	pub fn is_async_finish(&self, env:&Env) -> bool {
-		let has_async_result =
-			self.parameters.rust_parameters.iter().any(|param| {
-				param.typ.full_name(&env.library) == "Gio.AsyncResult"
-			});
+	pub fn is_async_finish(&self, env: &Env) -> bool {
+		let has_async_result = self
+			.parameters
+			.rust_parameters
+			.iter()
+			.any(|param| param.typ.full_name(&env.library) == "Gio.AsyncResult");
 		self.name.ends_with("_finish") && has_async_result
 	}
 }
 
-pub fn analyze<F:Borrow<library::Function>>(
-	env:&Env,
-	functions:&[F],
-	type_tid:Option<library::TypeId>,
-	in_trait:bool,
-	is_boxed:bool,
-	obj:&config::gobjects::GObject,
-	imports:&mut Imports,
-	mut signatures:Option<&mut Signatures>,
-	deps:Option<&[library::TypeId]>,
+pub fn analyze<F: Borrow<library::Function>>(
+	env: &Env,
+	functions: &[F],
+	type_tid: Option<library::TypeId>,
+	in_trait: bool,
+	is_boxed: bool,
+	obj: &config::gobjects::GObject,
+	imports: &mut Imports,
+	mut signatures: Option<&mut Signatures>,
+	deps: Option<&[library::TypeId]>,
 ) -> Vec<Info> {
 	let mut funcs = Vec::new();
 
@@ -201,10 +176,7 @@ pub fn analyze<F:Borrow<library::Function>>(
 			}
 		}
 
-		if env.is_totally_deprecated(
-			Some(type_tid.unwrap_or_default().ns_id),
-			func.deprecated_version,
-		) {
+		if env.is_totally_deprecated(Some(type_tid.unwrap_or_default().ns_id), func.deprecated_version) {
 			continue;
 		}
 		let name = nameutil::mangle_keywords(&*func.name).into_owned();
@@ -212,8 +184,7 @@ pub fn analyze<F:Borrow<library::Function>>(
 		let mut not_version = None;
 		if func.kind == library::FunctionKind::Method {
 			if let Some(deps) = deps {
-				let (has, version) =
-					signature_params.has_in_deps(env, &name, deps);
+				let (has, version) = signature_params.has_in_deps(env, &name, deps);
 				if has {
 					if let Some(v) = version {
 						if v > env.config.min_cfg_version {
@@ -248,12 +219,12 @@ pub fn analyze<F:Borrow<library::Function>>(
 }
 
 fn fixup_gpointer_parameter(
-	env:&Env,
-	type_tid:library::TypeId,
-	is_boxed:bool,
-	in_trait:bool,
-	parameters:&mut Parameters,
-	idx:usize,
+	env: &Env,
+	type_tid: library::TypeId,
+	is_boxed: bool,
+	in_trait: bool,
+	parameters: &mut Parameters,
+	idx: usize,
 ) {
 	use crate::analysis::ffi_type;
 
@@ -268,47 +239,35 @@ fn fixup_gpointer_parameter(
 	parameters.c_parameters[idx].ref_mode = RefMode::ByRef;
 	parameters.c_parameters[idx].transfer = Transfer::None;
 	parameters.transformations[idx] = Transformation {
-		ind_c:idx,
-		ind_rust:Some(idx),
-		transformation_type:TransformationType::ToGlibPointer {
-			name:parameters.rust_parameters[idx].name.clone(),
+		ind_c: idx,
+		ind_rust: Some(idx),
+		transformation_type: TransformationType::ToGlibPointer {
+			name: parameters.rust_parameters[idx].name.clone(),
 			instance_parameter,
-			transfer:Transfer::None,
-			ref_mode:RefMode::ByRef,
-			to_glib_extra:Default::default(),
-			explicit_target_type:format!(
-				"{} {}",
-				pointer_type,
-				ffi_name.as_str()
-			),
-			pointer_cast:format!(
-				" as {}",
-				nameutil::use_glib_if_needed(env, "ffi::gconstpointer")
-			),
+			transfer: Transfer::None,
+			ref_mode: RefMode::ByRef,
+			to_glib_extra: Default::default(),
+			explicit_target_type: format!("{} {}", pointer_type, ffi_name.as_str()),
+			pointer_cast: format!(" as {}", nameutil::use_glib_if_needed(env, "ffi::gconstpointer")),
 			in_trait,
-			nullable:false,
-			move_:false,
+			nullable: false,
+			move_: false,
 		},
 	};
 }
 
 fn fixup_special_functions(
-	env:&Env,
-	name:&str,
-	type_tid:library::TypeId,
-	is_boxed:bool,
-	in_trait:bool,
-	parameters:&mut Parameters,
+	env: &Env,
+	name: &str,
+	type_tid: library::TypeId,
+	is_boxed: bool,
+	in_trait: bool,
+	parameters: &mut Parameters,
 ) {
 	// Workaround for some _hash() / _compare() / _equal() functions taking
 	// "gconstpointer" as arguments instead of the actual type
-	if name == "hash"
-		&& parameters.c_parameters.len() == 1
-		&& parameters.c_parameters[0].c_type == "gconstpointer"
-	{
-		fixup_gpointer_parameter(
-			env, type_tid, is_boxed, in_trait, parameters, 0,
-		);
+	if name == "hash" && parameters.c_parameters.len() == 1 && parameters.c_parameters[0].c_type == "gconstpointer" {
+		fixup_gpointer_parameter(env, type_tid, is_boxed, in_trait, parameters, 0);
 	}
 
 	if (name == "compare" || name == "equal" || name == "is_equal")
@@ -316,20 +275,12 @@ fn fixup_special_functions(
 		&& parameters.c_parameters[0].c_type == "gconstpointer"
 		&& parameters.c_parameters[1].c_type == "gconstpointer"
 	{
-		fixup_gpointer_parameter(
-			env, type_tid, is_boxed, in_trait, parameters, 0,
-		);
-		fixup_gpointer_parameter(
-			env, type_tid, is_boxed, in_trait, parameters, 1,
-		);
+		fixup_gpointer_parameter(env, type_tid, is_boxed, in_trait, parameters, 0);
+		fixup_gpointer_parameter(env, type_tid, is_boxed, in_trait, parameters, 1);
 	}
 }
 
-fn find_callback_bound_to_destructor(
-	callbacks:&[Trampoline],
-	destroy:&mut Trampoline,
-	destroy_index:usize,
-) -> bool {
+fn find_callback_bound_to_destructor(callbacks: &[Trampoline], destroy: &mut Trampoline, destroy_index: usize) -> bool {
 	for call in callbacks {
 		if call.destroy_index == destroy_index {
 			destroy.nullable = call.nullable;
@@ -341,24 +292,24 @@ fn find_callback_bound_to_destructor(
 }
 
 fn analyze_callbacks(
-	env:&Env,
-	func:&library::Function,
-	cross_user_data_check:&mut HashMap<usize, usize>,
-	user_data_indexes:&mut HashSet<usize>,
-	parameters:&mut Parameters,
-	used_types:&mut Vec<String>,
-	bounds:&mut Bounds,
-	to_glib_extras:&mut HashMap<usize, String>,
-	imports:&mut Imports,
-	destroys:&mut Vec<Trampoline>,
-	callbacks:&mut Vec<Trampoline>,
-	params:&mut Vec<library::Parameter>,
-	configured_functions:&[&config::functions::Function],
-	disable_length_detect:bool,
-	in_trait:bool,
-	commented:&mut bool,
-	concurrency:library::Concurrency,
-	type_tid:library::TypeId,
+	env: &Env,
+	func: &library::Function,
+	cross_user_data_check: &mut HashMap<usize, usize>,
+	user_data_indexes: &mut HashSet<usize>,
+	parameters: &mut Parameters,
+	used_types: &mut Vec<String>,
+	bounds: &mut Bounds,
+	to_glib_extras: &mut HashMap<usize, String>,
+	imports: &mut Imports,
+	destroys: &mut Vec<Trampoline>,
+	callbacks: &mut Vec<Trampoline>,
+	params: &mut Vec<library::Parameter>,
+	configured_functions: &[&config::functions::Function],
+	disable_length_detect: bool,
+	in_trait: bool,
+	commented: &mut bool,
+	concurrency: library::Concurrency,
+	type_tid: library::TypeId,
 ) {
 	let mut to_replace = Vec::new();
 	let mut to_remove = Vec::new();
@@ -381,9 +332,7 @@ fn analyze_callbacks(
 		let mut destructors_to_update = Vec::new();
 		for pos in 0..parameters.c_parameters.len() {
 			// If it is a user data parameter, we ignore it.
-			if cross_user_data_check.values().any(|p| *p == pos)
-				|| user_data_indexes.contains(&pos)
-			{
+			if cross_user_data_check.values().any(|p| *p == pos) || user_data_indexes.contains(&pos) {
 				continue;
 			}
 			let par = &parameters.c_parameters[pos];
@@ -401,14 +350,8 @@ fn analyze_callbacks(
 			}
 			let rust_type = env.library.type_(par.typ);
 			let callback_info = if !*par.nullable || !rust_type.is_function() {
-				let (to_glib_extra, callback_info) = bounds.add_for_parameter(
-					env,
-					func,
-					par,
-					false,
-					concurrency,
-					configured_functions,
-				);
+				let (to_glib_extra, callback_info) =
+					bounds.add_for_parameter(env, func, par, false, concurrency, configured_functions);
 				if let Some(to_glib_extra) = to_glib_extra {
 					if par.c_type != "GDestroyNotify" {
 						to_glib_extras.insert(pos, to_glib_extra);
@@ -421,26 +364,24 @@ fn analyze_callbacks(
 
 			if rust_type.is_function() {
 				if par.c_type != "GDestroyNotify" {
-					let callback_parameters_config =
-						configured_functions.iter().find_map(|f| {
-							f.parameters
-								.iter()
-								.find(|p| p.ident.is_match(&par.name))
-								.map(|p| &p.callback_parameters)
-						});
-					if let Some((mut callback, destroy_index)) =
-						analyze_callback(
-							func_name,
-							type_tid,
-							env,
-							par,
-							&callback_info,
-							commented,
-							imports,
-							&c_parameters,
-							rust_type,
-							callback_parameters_config,
-						) {
+					let callback_parameters_config = configured_functions.iter().find_map(|f| {
+						f.parameters
+							.iter()
+							.find(|p| p.ident.is_match(&par.name))
+							.map(|p| &p.callback_parameters)
+					});
+					if let Some((mut callback, destroy_index)) = analyze_callback(
+						func_name,
+						type_tid,
+						env,
+						par,
+						&callback_info,
+						commented,
+						imports,
+						&c_parameters,
+						rust_type,
+						callback_parameters_config,
+					) {
 						if let Some(destroy_index) = destroy_index {
 							let user_data = cross_user_data_check
 								.entry(destroy_index)
@@ -478,26 +419,16 @@ fn analyze_callbacks(
 					// We just assume that for API "cleanness", the destroy
 					// callback will always be |-> *after* <-| the initial
 					// callback.
-					if let Some(user_data_index) =
-						cross_user_data_check.get(&pos)
-					{
+					if let Some(user_data_index) = cross_user_data_check.get(&pos) {
 						callback.user_data_index = *user_data_index;
 						callback.destroy_index = pos;
 					} else {
-						warn_main!(
-							type_tid,
-							"`{}`: no user data point to the destroy callback",
-							func_name,
-						);
+						warn_main!(type_tid, "`{}`: no user data point to the destroy callback", func_name,);
 						*commented = true;
 					}
 					// We check if the user trampoline is there. If so, we
 					// change the destroy nullable value if needed.
-					if !find_callback_bound_to_destructor(
-						callbacks,
-						&mut callback,
-						pos,
-					) {
+					if !find_callback_bound_to_destructor(callbacks, &mut callback, pos) {
 						// Maybe the linked callback is after so we store it
 						// just in case...
 						destructors_to_update.push((pos, destroys.len()));
@@ -517,16 +448,8 @@ fn analyze_callbacks(
 			}
 		}
 		for (destroy_index, pos_in_destroys) in destructors_to_update {
-			if !find_callback_bound_to_destructor(
-				callbacks,
-				&mut destroys[pos_in_destroys],
-				destroy_index,
-			) {
-				warn_main!(
-					type_tid,
-					"`{}`: destructor without linked callback",
-					func_name
-				);
+			if !find_callback_bound_to_destructor(callbacks, &mut destroys[pos_in_destroys], destroy_index) {
+				warn_main!(type_tid, "`{}`: destructor without linked callback", func_name);
 			}
 		}
 	}
@@ -539,11 +462,7 @@ fn analyze_callbacks(
 		.any(|a| a[0] == a[1])
 	{
 		*commented = true;
-		warn_main!(
-			type_tid,
-			"`{}`: Different user data share the same destructors",
-			func.name
-		);
+		warn_main!(type_tid, "`{}`: Different user data share the same destructors", func.name);
 	}
 
 	if !destroys.is_empty() || !callbacks.is_empty() {
@@ -563,14 +482,8 @@ fn analyze_callbacks(
 		for pos in s.iter().rev() {
 			params.remove(**pos);
 		}
-		*parameters = function_parameters::analyze(
-			env,
-			params,
-			configured_functions,
-			disable_length_detect,
-			false,
-			in_trait,
-		);
+		*parameters =
+			function_parameters::analyze(env, params, configured_functions, disable_length_detect, false, in_trait);
 	} else {
 		warn_main!(
 			type_tid,
@@ -583,73 +496,56 @@ fn analyze_callbacks(
 }
 
 fn analyze_function(
-	env:&Env,
-	obj:&config::gobjects::GObject,
-	func_name:&str,
-	name:String,
-	status:GStatus,
-	func:&library::Function,
-	type_tid:Option<library::TypeId>,
-	in_trait:bool,
-	is_boxed:bool,
-	configured_functions:&[&config::functions::Function],
-	imports:&mut Imports,
+	env: &Env,
+	obj: &config::gobjects::GObject,
+	func_name: &str,
+	name: String,
+	status: GStatus,
+	func: &library::Function,
+	type_tid: Option<library::TypeId>,
+	in_trait: bool,
+	is_boxed: bool,
+	configured_functions: &[&config::functions::Function],
+	imports: &mut Imports,
 ) -> Info {
 	let ns_id = type_tid.map_or(MAIN_NAMESPACE, |t| t.ns_id);
 	let type_tid = type_tid.unwrap_or_default();
 	let r#async = func.finish_func.is_some()
-		|| func.parameters.iter().any(|parameter| {
-			parameter.scope == ParameterScope::Async
-				&& parameter.c_type == "GAsyncReadyCallback"
-		});
-	let has_callback_parameter = !r#async
-		&& func
+		|| func
 			.parameters
 			.iter()
-			.any(|par| env.library.type_(par.typ).is_function());
+			.any(|parameter| parameter.scope == ParameterScope::Async && parameter.c_type == "GAsyncReadyCallback");
+	let has_callback_parameter = !r#async && func.parameters.iter().any(|par| env.library.type_(par.typ).is_function());
 	let concurrency = match env.library.type_(type_tid) {
-		library::Type::Class(_)
-		| library::Type::Interface(_)
-		| library::Type::Record(_) => obj.concurrency,
+		library::Type::Class(_) | library::Type::Interface(_) | library::Type::Record(_) => obj.concurrency,
 		_ => library::Concurrency::SendSync,
 	};
 
 	let mut commented = false;
-	let mut bounds:Bounds = Default::default();
+	let mut bounds: Bounds = Default::default();
 	let mut to_glib_extras = HashMap::<usize, String>::new();
-	let mut used_types:Vec<String> = Vec::with_capacity(4);
+	let mut used_types: Vec<String> = Vec::with_capacity(4);
 	let mut trampoline = None;
 	let mut callbacks = Vec::new();
 	let mut destroys = Vec::new();
 	let mut async_future = None;
 
-	if !r#async
-		&& !has_callback_parameter
-		&& func.parameters.iter().any(|par| par.c_type == "GDestroyNotify")
-	{
+	if !r#async && !has_callback_parameter && func.parameters.iter().any(|par| par.c_type == "GDestroyNotify") {
 		// In here, We have a DestroyNotify callback but no other callback is
 		// provided. A good example of this situation is this function:
 		// https://developer.gnome.org/gio/stable/GTlsPassword.html#g-tls-password-set-value-full
-		warn_main!(
-			type_tid,
-			"Function \"{}\" with destroy callback without callbacks",
-			func.name
-		);
+		warn_main!(type_tid, "Function \"{}\" with destroy callback without callbacks", func.name);
 		commented = true;
 	}
 
-	let mut new_name =
-		configured_functions.iter().find_map(|f| f.rename.clone());
-	let is_constructor =
-		configured_functions.iter().find_map(|f| f.is_constructor);
+	let mut new_name = configured_functions.iter().find_map(|f| f.rename.clone());
+	let is_constructor = configured_functions.iter().find_map(|f| f.is_constructor);
 
-	let bypass_auto_rename =
-		configured_functions.iter().any(|f| f.bypass_auto_rename);
+	let bypass_auto_rename = configured_functions.iter().any(|f| f.bypass_auto_rename);
 	let is_constructor = is_constructor.unwrap_or(false);
 	if !bypass_auto_rename && new_name.is_none() {
 		if func.kind == library::FunctionKind::Constructor || is_constructor {
-			if func.kind == library::FunctionKind::Constructor && is_constructor
-			{
+			if func.kind == library::FunctionKind::Constructor && is_constructor {
 				warn_main!(
 					type_tid,
 					"`{}`: config forces 'constructor' on an already \
@@ -658,82 +554,50 @@ fn analyze_function(
 				);
 			}
 
-			if name.starts_with("new_from")
-				|| name.starts_with("new_with")
-				|| name.starts_with("new_for")
-			{
+			if name.starts_with("new_from") || name.starts_with("new_with") || name.starts_with("new_for") {
 				new_name = Some(name[4..].to_string());
 			}
 		} else {
 			let nb_in_params = func
 				.parameters
 				.iter()
-				.filter(|param| {
-					library::ParameterDirection::In == param.direction
-				})
+				.filter(|param| library::ParameterDirection::In == param.direction)
 				.fold(0, |acc, _| acc + 1);
 			let is_bool_getter = (func.parameters.len() == nb_in_params)
-				&& (func.ret.typ == library::TypeId::tid_bool()
-					|| func.ret.typ == library::TypeId::tid_c_bool());
-			new_name =
-				getter_rules::try_rename_would_be_getter(&name, is_bool_getter)
-					.ok()
-					.map(getter_rules::NewName::unwrap);
+				&& (func.ret.typ == library::TypeId::tid_bool() || func.ret.typ == library::TypeId::tid_c_bool());
+			new_name = getter_rules::try_rename_would_be_getter(&name, is_bool_getter)
+				.ok()
+				.map(getter_rules::NewName::unwrap);
 		}
 	}
 
-	let version = configured_functions
-		.iter()
-		.filter_map(|f| f.version)
-		.min()
-		.or(func.version);
+	let version = configured_functions.iter().filter_map(|f| f.version).min().or(func.version);
 
 	let version = env.config.filter_version(version);
 	let deprecated_version = func.deprecated_version;
-	let visibility = configured_functions
-		.iter()
-		.find_map(|f| f.visibility)
-		.unwrap_or_default();
-	let cfg_condition =
-		configured_functions.iter().find_map(|f| f.cfg_condition.clone());
+	let visibility = configured_functions.iter().find_map(|f| f.visibility).unwrap_or_default();
+	let cfg_condition = configured_functions.iter().find_map(|f| f.cfg_condition.clone());
 	let doc_hidden = configured_functions.iter().any(|f| f.doc_hidden);
-	let doc_trait_name =
-		configured_functions.iter().find_map(|f| f.doc_trait_name.clone());
-	let doc_struct_name =
-		configured_functions.iter().find_map(|f| f.doc_struct_name.clone());
+	let doc_trait_name = configured_functions.iter().find_map(|f| f.doc_trait_name.clone());
+	let doc_struct_name = configured_functions.iter().find_map(|f| f.doc_struct_name.clone());
 	let doc_ignore_parameters = configured_functions
 		.iter()
 		.find(|f| !f.doc_ignore_parameters.is_empty())
 		.map(|f| f.doc_ignore_parameters.clone())
 		.unwrap_or_default();
-	let disable_length_detect =
-		configured_functions.iter().any(|f| f.disable_length_detect);
+	let disable_length_detect = configured_functions.iter().any(|f| f.disable_length_detect);
 	let no_future = configured_functions.iter().any(|f| f.no_future);
 	let unsafe_ = configured_functions.iter().any(|f| f.unsafe_);
 	let assertion = configured_functions.iter().find_map(|f| f.assertion);
 
 	let imports = &mut imports.with_defaults(version, &cfg_condition);
 
-	let ret = return_value::analyze(
-		env,
-		obj,
-		func,
-		type_tid,
-		configured_functions,
-		&mut used_types,
-		imports,
-	);
+	let ret = return_value::analyze(env, obj, func, type_tid, configured_functions, &mut used_types, imports);
 	commented |= ret.commented;
 
 	let mut params = func.parameters.clone();
-	let mut parameters = function_parameters::analyze(
-		env,
-		&params,
-		configured_functions,
-		disable_length_detect,
-		r#async,
-		in_trait,
-	);
+	let mut parameters =
+		function_parameters::analyze(env, &params, configured_functions, disable_length_detect, r#async, in_trait);
 	parameters.analyze_return(env, &ret.parameter);
 
 	if let Some(ref f) = ret.parameter {
@@ -745,19 +609,12 @@ fn analyze_function(
 		}
 	}
 
-	fixup_special_functions(
-		env,
-		name.as_str(),
-		type_tid,
-		is_boxed,
-		in_trait,
-		&mut parameters,
-	);
+	fixup_special_functions(env, name.as_str(), type_tid, is_boxed, in_trait, &mut parameters);
 
 	// Key: destroy callback index
 	// Value: associated user data index
-	let mut cross_user_data_check:HashMap<usize, usize> = HashMap::new();
-	let mut user_data_indexes:HashSet<usize> = HashSet::new();
+	let mut cross_user_data_check: HashMap<usize, usize> = HashMap::new();
+	let mut user_data_indexes: HashSet<usize> = HashSet::new();
 
 	if status.need_generate() {
 		if !has_callback_parameter {
@@ -779,10 +636,7 @@ fn analyze_function(
 					correction_instance = 1;
 				}
 
-				if r#async
-					&& pos >= correction_instance
-					&& to_remove.contains(&(pos - correction_instance))
-				{
+				if r#async && pos >= correction_instance && to_remove.contains(&(pos - correction_instance)) {
 					continue;
 				}
 				assert!(
@@ -795,20 +649,12 @@ fn analyze_function(
 					.try_from_glib(&par.try_from_glib)
 					.try_build()
 				{
-					if !rust_type.as_str().ends_with("GString")
-						|| par.c_type == "gchar***"
-					{
+					if !rust_type.as_str().ends_with("GString") || par.c_type == "gchar***" {
 						used_types.extend(rust_type.into_used_types());
 					}
 				}
-				let (to_glib_extra, callback_info) = bounds.add_for_parameter(
-					env,
-					func,
-					par,
-					r#async,
-					library::Concurrency::None,
-					configured_functions,
-				);
+				let (to_glib_extra, callback_info) =
+					bounds.add_for_parameter(env, func, par, r#async, library::Concurrency::None, configured_functions);
 				if let Some(to_glib_extra) = to_glib_extra {
 					to_glib_extras.insert(pos, to_glib_extra);
 				}
@@ -826,9 +672,7 @@ fn analyze_function(
 					configured_functions,
 					&parameters,
 				);
-				let type_error = !(r#async
-					&& *env.library.type_(par.typ)
-						== Type::Basic(library::Basic::Pointer))
+				let type_error = !(r#async && *env.library.type_(par.typ) == Type::Basic(library::Basic::Pointer))
 					&& RustType::builder(env, par.typ)
 						.direction(par.direction)
 						.scope(par.scope)
@@ -868,29 +712,20 @@ fn analyze_function(
 
 	for par in &parameters.rust_parameters {
 		// Disallow basic arrays without length
-		let is_len_for_par = |t:&Transformation| {
-			if let TransformationType::Length { ref array_name, .. } =
-				t.transformation_type
-			{
+		let is_len_for_par = |t: &Transformation| {
+			if let TransformationType::Length { ref array_name, .. } = t.transformation_type {
 				array_name == &par.name
 			} else {
 				false
 			}
 		};
-		if is_carray_with_direct_elements(env, par.typ)
-			&& !parameters.transformations.iter().any(is_len_for_par)
-		{
+		if is_carray_with_direct_elements(env, par.typ) && !parameters.transformations.iter().any(is_len_for_par) {
 			commented = true;
 		}
 	}
 
-	let (outs, unsupported_outs) = out_parameters::analyze(
-		env,
-		func,
-		&parameters.c_parameters,
-		&ret,
-		configured_functions,
-	);
+	let (outs, unsupported_outs) =
+		out_parameters::analyze(env, func, &parameters.c_parameters, &ret, configured_functions);
 	if unsupported_outs {
 		warn_main!(
 			type_tid,
@@ -925,19 +760,13 @@ fn analyze_function(
 	}
 
 	if status.need_generate() && !commented {
-		if (!destroys.is_empty() || !callbacks.is_empty())
-			&& callbacks.iter().any(|c| !c.scope.is_call())
-		{
+		if (!destroys.is_empty() || !callbacks.is_empty()) && callbacks.iter().any(|c| !c.scope.is_call()) {
 			imports.add("std::boxed::Box as Box_");
 		}
 
 		for transformation in &mut parameters.transformations {
-			if let Some(to_glib_extra) =
-				to_glib_extras.get(&transformation.ind_c)
-			{
-				transformation
-					.transformation_type
-					.set_to_glib_extra(to_glib_extra);
+			if let Some(to_glib_extra) = to_glib_extras.get(&transformation.ind_c) {
+				transformation.transformation_type.set_to_glib_extra(to_glib_extra);
 			}
 		}
 
@@ -948,37 +777,33 @@ fn analyze_function(
 			imports.add("glib::prelude::*");
 		}
 
-		if func.name.parse::<special_functions::Type>().is_err()
-			|| parameters.c_parameters.iter().any(|p| p.move_)
-		{
+		if func.name.parse::<special_functions::Type>().is_err() || parameters.c_parameters.iter().any(|p| p.move_) {
 			imports.add("glib::translate::*");
 		}
 		bounds.update_imports(imports);
 	}
 
 	let is_method = func.kind == library::FunctionKind::Method;
-	let assertion = assertion.unwrap_or_else(|| {
-		SafetyAssertionMode::of(env, is_method, &parameters)
-	});
+	let assertion = assertion.unwrap_or_else(|| SafetyAssertionMode::of(env, is_method, &parameters));
 
 	let generate_doc = configured_functions.iter().all(|f| f.generate_doc);
 
 	Info {
 		name,
-		func_name:func_name.to_string(),
+		func_name: func_name.to_string(),
 		new_name,
-		glib_name:func.c_identifier.as_ref().unwrap().clone(),
+		glib_name: func.c_identifier.as_ref().unwrap().clone(),
 		status,
-		kind:func.kind,
+		kind: func.kind,
 		visibility,
-		type_name:RustType::try_new(env, type_tid),
+		type_name: RustType::try_new(env, type_tid),
 		parameters,
 		ret,
 		bounds,
 		outs,
 		version,
 		deprecated_version,
-		not_version:None,
+		not_version: None,
 		cfg_condition,
 		assertion,
 		doc_hidden,
@@ -991,20 +816,17 @@ fn analyze_function(
 		async_future,
 		callbacks,
 		destroys,
-		remove_params:cross_user_data_check
-			.values()
-			.copied()
-			.collect::<Vec<_>>(),
+		remove_params: cross_user_data_check.values().copied().collect::<Vec<_>>(),
 		commented,
-		hidden:false,
+		hidden: false,
 		ns_id,
 		generate_doc,
-		get_property:func.get_property.clone(),
-		set_property:func.set_property.clone(),
+		get_property: func.get_property.clone(),
+		set_property: func.set_property.clone(),
 	}
 }
 
-pub fn is_carray_with_direct_elements(env:&Env, typ:library::TypeId) -> bool {
+pub fn is_carray_with_direct_elements(env: &Env, typ: library::TypeId) -> bool {
 	match *env.library.type_(typ) {
 		Type::CArray(inner_tid) => {
 			use super::conversion_type::ConversionType;
@@ -1015,30 +837,23 @@ pub fn is_carray_with_direct_elements(env:&Env, typ:library::TypeId) -> bool {
 }
 
 fn analyze_async(
-	env:&Env,
-	func:&library::Function,
-	type_tid:library::TypeId,
-	codegen_name:&str,
-	callback_info:Option<CallbackInfo>,
-	commented:&mut bool,
-	trampoline:&mut Option<AsyncTrampoline>,
-	no_future:bool,
-	async_future:&mut Option<AsyncFuture>,
-	configured_functions:&[&config::functions::Function],
-	parameters:&function_parameters::Parameters,
+	env: &Env,
+	func: &library::Function,
+	type_tid: library::TypeId,
+	codegen_name: &str,
+	callback_info: Option<CallbackInfo>,
+	commented: &mut bool,
+	trampoline: &mut Option<AsyncTrampoline>,
+	no_future: bool,
+	async_future: &mut Option<AsyncFuture>,
+	configured_functions: &[&config::functions::Function],
+	parameters: &function_parameters::Parameters,
 ) -> bool {
-	if let Some(CallbackInfo {
-		callback_type,
-		success_parameters,
-		error_parameters,
-		bound_name,
-	}) = callback_info
-	{
+	if let Some(CallbackInfo { callback_type, success_parameters, error_parameters, bound_name }) = callback_info {
 		// Checks for /*Ignored*/ or other error comments
 		*commented |= callback_type.contains("/*");
 		let func_name = func.c_identifier.as_ref().unwrap();
-		let finish_func_name = if let Some(finish_func_name) = &func.finish_func
-		{
+		let finish_func_name = if let Some(finish_func_name) = &func.finish_func {
 			finish_func_name.to_string()
 		} else {
 			finish_function_name(func_name)
@@ -1046,32 +861,17 @@ fn analyze_async(
 		let mut output_params = vec![];
 		let mut ffi_ret = None;
 		if let Some(function) = find_function(env, &finish_func_name) {
-			if use_function_return_for_result(
-				env,
-				function.ret.typ,
-				&func.name,
-				configured_functions,
-			) {
-				ffi_ret = Some(analysis::Parameter::from_return_value(
-					env,
-					&function.ret,
-					configured_functions,
-				));
+			if use_function_return_for_result(env, function.ret.typ, &func.name, configured_functions) {
+				ffi_ret = Some(analysis::Parameter::from_return_value(env, &function.ret, configured_functions));
 			}
 
 			for param in &function.parameters {
 				let mut lib_par = param.clone();
 				if nameutil::needs_mangling(&param.name) {
-					lib_par.name =
-						nameutil::mangle_keywords(&*param.name).into_owned();
+					lib_par.name = nameutil::mangle_keywords(&*param.name).into_owned();
 				}
-				let configured_parameters =
-					configured_functions.matched_parameters(&lib_par.name);
-				output_params.push(analysis::Parameter::from_parameter(
-					env,
-					&lib_par,
-					&configured_parameters,
-				));
+				let configured_parameters = configured_functions.matched_parameters(&lib_par.name);
+				output_params.push(analysis::Parameter::from_parameter(env, &lib_par, &configured_parameters));
 			}
 		}
 		if trampoline.is_some() || async_future.is_some() {
@@ -1086,11 +886,7 @@ fn analyze_async(
 		}
 		if !*commented && success_parameters.is_empty() {
 			if success_parameters.is_empty() {
-				warn_main!(
-					type_tid,
-					"{}: missing success parameters for async future",
-					func.name
-				);
+				warn_main!(type_tid, "{}: missing success parameters for async future", func.name);
 			}
 			*commented = true;
 			return false;
@@ -1099,13 +895,9 @@ fn analyze_async(
 
 		*trampoline = Some(AsyncTrampoline {
 			is_method,
-			has_error_parameter:error_parameters.is_some(),
-			name:format!("{codegen_name}_trampoline"),
-			finish_func_name:format!(
-				"{}::{}",
-				env.main_sys_crate_name(),
-				finish_func_name
-			),
+			has_error_parameter: error_parameters.is_some(),
+			name: format!("{codegen_name}_trampoline"),
+			finish_func_name: format!("{}::{}", env.main_sys_crate_name(), finish_func_name),
 			callback_type,
 			bound_name,
 			output_params,
@@ -1115,15 +907,10 @@ fn analyze_async(
 		if !no_future {
 			*async_future = Some(AsyncFuture {
 				is_method,
-				name:format!(
-					"{}_future",
-					codegen_name.trim_end_matches("_async")
-				),
+				name: format!("{}_future", codegen_name.trim_end_matches("_async")),
 				success_parameters,
 				error_parameters,
-				assertion:match SafetyAssertionMode::of(
-					env, is_method, parameters,
-				) {
+				assertion: match SafetyAssertionMode::of(env, is_method, parameters) {
 					SafetyAssertionMode::None => SafetyAssertionMode::None,
 					// "_future" functions calls the "async" one which has the
 					// init check, so no need to do it twice.
@@ -1138,16 +925,16 @@ fn analyze_async(
 }
 
 fn analyze_callback(
-	func_name:&str,
-	type_tid:library::TypeId,
-	env:&Env,
-	par:&CParameter,
-	callback_info:&Option<CallbackInfo>,
-	commented:&mut bool,
-	imports:&mut Imports,
-	c_parameters:&[(&CParameter, usize)],
-	rust_type:&Type,
-	callback_parameters_config:Option<&config::functions::CallbackParameters>,
+	func_name: &str,
+	type_tid: library::TypeId,
+	env: &Env,
+	par: &CParameter,
+	callback_info: &Option<CallbackInfo>,
+	commented: &mut bool,
+	imports: &mut Imports,
+	c_parameters: &[(&CParameter, usize)],
+	rust_type: &Type,
+	callback_parameters_config: Option<&config::functions::CallbackParameters>,
 ) -> Option<(Trampoline, Option<usize>)> {
 	let mut imports_to_add = Vec::new();
 
@@ -1214,8 +1001,7 @@ fn analyze_callback(
 		// If we don't have a "user data" parameter, we can't get the closure so
 		// there's nothing we can do...
 		if par.c_type != "GDestroyNotify"
-			&& (func.parameters.is_empty()
-				|| !func.parameters.iter().any(|c| c.closure.is_some()))
+			&& (func.parameters.is_empty() || !func.parameters.iter().any(|c| c.closure.is_some()))
 		{
 			*commented = true;
 			warn_main!(
@@ -1257,22 +1043,13 @@ fn analyze_callback(
 			.direction(ParameterDirection::Return)
 			.try_build()
 		{
-			if !rust_type.as_str().ends_with("GString")
-				&& !rust_type.as_str().ends_with("GAsyncResult")
-			{
+			if !rust_type.as_str().ends_with("GString") && !rust_type.as_str().ends_with("GAsyncResult") {
 				imports_to_add.extend(rust_type.into_used_types());
 			}
 		}
 		let user_data_index = par.user_data_index.unwrap_or(0);
-		if par.c_type != "GDestroyNotify"
-			&& c_parameters.len() <= user_data_index
-		{
-			warn_main!(
-				type_tid,
-				"`{}`: Invalid user data index of `{}`",
-				func.name,
-				user_data_index
-			);
+		if par.c_type != "GDestroyNotify" && c_parameters.len() <= user_data_index {
+			warn_main!(type_tid, "`{}`: Invalid user data index of `{}`", func.name, user_data_index);
 			*commented = true;
 			None
 		} else if match par.destroy_index {
@@ -1295,10 +1072,10 @@ fn analyze_callback(
 			}
 			Some((
 				Trampoline {
-					name:par.name.to_string(),
+					name: par.name.to_string(),
 					parameters,
-					ret:func.ret.clone(),
-					bound_name:match callback_info {
+					ret: func.ret.clone(),
+					bound_name: match callback_info {
 						Some(x) => x.bound_name.to_string(),
 						None => {
 							match RustType::builder(env, par.typ)
@@ -1309,34 +1086,25 @@ fn analyze_callback(
 							{
 								Ok(rust_type) => rust_type.into_string(),
 								Err(_) => {
-									warn_main!(
-										type_tid,
-										"`{}`: unknown type",
-										func.name
-									);
+									warn_main!(type_tid, "`{}`: unknown type", func.name);
 									return None;
 								},
 							}
 						},
 					},
-					bounds:Bounds::default(),
-					version:None,
-					inhibit:false,
-					concurrency:library::Concurrency::None,
-					is_notify:false,
-					scope:par.scope,
+					bounds: Bounds::default(),
+					version: None,
+					inhibit: false,
+					concurrency: library::Concurrency::None,
+					is_notify: false,
+					scope: par.scope,
 					// If destroy callback, id doesn't matter.
-					user_data_index:if par.c_type != "GDestroyNotify" {
-						c_parameters[user_data_index].1
-					} else {
-						0
-					},
-					destroy_index:0,
-					nullable:par.nullable,
-					type_name:env.library.type_(type_tid).get_name(),
+					user_data_index: if par.c_type != "GDestroyNotify" { c_parameters[user_data_index].1 } else { 0 },
+					destroy_index: 0,
+					nullable: par.nullable,
+					type_name: env.library.type_(type_tid).get_name(),
 				},
-				par.destroy_index
-					.map(|destroy_index| c_parameters[destroy_index].1),
+				par.destroy_index.map(|destroy_index| c_parameters[destroy_index].1),
 			))
 		}
 	} else {
@@ -1344,11 +1112,8 @@ fn analyze_callback(
 	}
 }
 
-pub fn find_function<'a>(
-	env:&'a Env,
-	c_identifier:&str,
-) -> Option<&'a Function> {
-	let find = |functions:&'a [Function]| -> Option<&'a Function> {
+pub fn find_function<'a>(env: &'a Env, c_identifier: &str) -> Option<&'a Function> {
+	let find = |functions: &'a [Function]| -> Option<&'a Function> {
 		for function in functions {
 			if let Some(ref func_c_identifier) = function.c_identifier {
 				if func_c_identifier == c_identifier {
@@ -1380,7 +1145,7 @@ pub fn find_function<'a>(
 }
 
 /// Given async function name tries to guess the name of finish function.
-pub fn finish_function_name(mut func_name:&str) -> String {
+pub fn finish_function_name(mut func_name: &str) -> String {
 	if func_name.ends_with("_async") {
 		let len = func_name.len() - "_async".len();
 		func_name = &func_name[0..len];
@@ -1389,8 +1154,8 @@ pub fn finish_function_name(mut func_name:&str) -> String {
 }
 
 pub fn find_index_to_ignore<'a>(
-	parameters:impl IntoIterator<Item = &'a library::Parameter>,
-	ret:Option<&'a library::Parameter>,
+	parameters: impl IntoIterator<Item = &'a library::Parameter>,
+	ret: Option<&'a library::Parameter>,
 ) -> Option<usize> {
 	parameters
 		.into_iter()
@@ -1405,10 +1170,7 @@ mod tests {
 
 	#[test]
 	fn test_finish_function_name() {
-		assert_eq!(
-			"g_file_copy_finish",
-			&finish_function_name("g_file_copy_async")
-		);
+		assert_eq!("g_file_copy_finish", &finish_function_name("g_file_copy_async"));
 		assert_eq!("g_bus_get_finish", &finish_function_name("g_bus_get"));
 	}
 }

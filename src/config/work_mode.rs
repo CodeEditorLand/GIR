@@ -10,7 +10,9 @@ pub enum WorkMode {
 }
 
 impl WorkMode {
-	pub fn is_normal(self) -> bool { matches!(self, Self::Normal) }
+	pub fn is_normal(self) -> bool {
+		matches!(self, Self::Normal)
+	}
 
 	pub fn is_generate_rust_files(self) -> bool {
 		matches!(self, Self::Normal | Self::Sys)
@@ -20,7 +22,7 @@ impl WorkMode {
 impl FromStr for WorkMode {
 	type Err = String;
 
-	fn from_str(s:&str) -> Result<Self, Self::Err> {
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		match s {
 			"normal" => Ok(Self::Normal),
 			"sys" => Ok(Self::Sys),

@@ -1,18 +1,15 @@
-pub use crate::config::{
-	matchable::Matchable,
-	parameter_matchable::ParameterMatchable,
-};
+pub use crate::config::{matchable::Matchable, parameter_matchable::ParameterMatchable};
 
 pub trait IntoString {
 	fn into_string(self) -> String;
 }
 
 pub trait MapAny<T> {
-	fn map_any<F:FnOnce(T) -> T>(self, op:F) -> Self;
+	fn map_any<F: FnOnce(T) -> T>(self, op: F) -> Self;
 }
 
 impl<T> MapAny<T> for Result<T, T> {
-	fn map_any<F:FnOnce(T) -> T>(self, op:F) -> Self {
+	fn map_any<F: FnOnce(T) -> T>(self, op: F) -> Self {
 		match self {
 			Ok(x) => Ok(op(x)),
 			Err(x) => Err(op(x)),

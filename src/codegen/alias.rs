@@ -1,5 +1,5 @@
 use std::{
-	io::{prelude::*, Result},
+	io::{Result, prelude::*},
 	path::Path,
 };
 
@@ -13,15 +13,12 @@ use crate::{
 	traits::*,
 };
 
-pub fn generate(env:&Env, root_path:&Path, mod_rs:&mut Vec<String>) {
-	let configs:Vec<&GObject> = env
+pub fn generate(env: &Env, root_path: &Path, mod_rs: &mut Vec<String>) {
+	let configs: Vec<&GObject> = env
 		.config
 		.objects
 		.values()
-		.filter(|c| {
-			c.status.need_generate()
-				&& c.type_id.is_some_and(|tid| tid.ns_id == namespaces::MAIN)
-		})
+		.filter(|c| c.status.need_generate() && c.type_id.is_some_and(|tid| tid.ns_id == namespaces::MAIN))
 		.collect();
 	let mut has_any = false;
 	for config in &configs {
@@ -45,9 +42,7 @@ pub fn generate(env:&Env, root_path:&Path, mod_rs:&mut Vec<String>) {
 
 		mod_rs.push("\nmod alias;".into());
 		for config in &configs {
-			if let Type::Alias(alias) =
-				env.library.type_(config.type_id.unwrap())
-			{
+			if let Type::Alias(alias) = env.library.type_(config.type_id.unwrap()) {
 				mod_rs.push(format!("pub use self::alias::{};", alias.name));
 				generate_alias(env, w, alias, config)?;
 			}
@@ -57,12 +52,7 @@ pub fn generate(env:&Env, root_path:&Path, mod_rs:&mut Vec<String>) {
 	});
 }
 
-fn generate_alias(
-	env:&Env,
-	w:&mut dyn Write,
-	alias:&Alias,
-	_:&GObject,
-) -> Result<()> {
+fn generate_alias(env: &Env, w: &mut dyn Write, alias: &Alias, _: &GObject) -> Result<()> {
 	let typ = RustType::try_new(env, alias.typ).into_string();
 	doc_alias(w, &alias.c_identifier, "", 0)?;
 	writeln!(w, "pub type {} = {};", alias.name, typ)?;

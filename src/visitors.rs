@@ -3,14 +3,11 @@ use crate::library::*;
 pub trait FunctionsMutVisitor {
 	// TODO: remove interrupt functionality if it is not used
 	// visiting stops if returned false
-	fn visit_function_mut(&mut self, func:&mut Function) -> bool;
+	fn visit_function_mut(&mut self, func: &mut Function) -> bool;
 }
 
 impl Namespace {
-	pub fn visit_functions_mut<V:FunctionsMutVisitor>(
-		&mut self,
-		visitor:&mut V,
-	) -> bool {
+	pub fn visit_functions_mut<V: FunctionsMutVisitor>(&mut self, visitor: &mut V) -> bool {
 		for type_ in self.types.iter_mut().flatten() {
 			if !type_.visit_functions_mut(visitor) {
 				return false;
@@ -21,10 +18,7 @@ impl Namespace {
 }
 
 impl Type {
-	pub fn visit_functions_mut<V:FunctionsMutVisitor>(
-		&mut self,
-		visitor:&mut V,
-	) -> bool {
+	pub fn visit_functions_mut<V: FunctionsMutVisitor>(&mut self, visitor: &mut V) -> bool {
 		match self {
 			Type::Class(class) => {
 				for function in &mut class.functions {

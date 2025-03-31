@@ -2,23 +2,21 @@ use std::io::{Result, Write};
 
 use super::general::version_condition;
 use crate::{
+	Env,
 	analysis::{self, special_functions::FunctionType},
 	version::Version,
-	Env,
 };
 
 pub(super) fn generate(
-	w:&mut dyn Write,
-	env:&Env,
-	function:&analysis::functions::Info,
-	specials:&analysis::special_functions::Infos,
-	scope_version:Option<Version>,
+	w: &mut dyn Write,
+	env: &Env,
+	function: &analysis::functions::Info,
+	specials: &analysis::special_functions::Infos,
+	scope_version: Option<Version>,
 ) -> Result<bool> {
 	if let Some(special) = specials.functions().get(&function.glib_name) {
 		match special.type_ {
-			FunctionType::StaticStringify => {
-				generate_static_to_str(w, env, function, scope_version)
-			},
+			FunctionType::StaticStringify => generate_static_to_str(w, env, function, scope_version),
 		}
 		.map(|()| true)
 	} else {
@@ -27,10 +25,10 @@ pub(super) fn generate(
 }
 
 pub(super) fn generate_static_to_str(
-	w:&mut dyn Write,
-	env:&Env,
-	function:&analysis::functions::Info,
-	scope_version:Option<Version>,
+	w: &mut dyn Write,
+	env: &Env,
+	function: &analysis::functions::Info,
+	scope_version: Option<Version>,
 ) -> Result<()> {
 	writeln!(w)?;
 	let version = Version::if_stricter_than(function.version, scope_version);

@@ -9,7 +9,7 @@ pub fn check_fmt() -> bool {
 }
 
 /// Run `cargo fmt` on path
-pub fn format(path:&Path) {
+pub fn format(path: &Path) {
 	let output = Command::new("cargo").arg("fmt").current_dir(path).output();
 	match output {
 		Ok(output) if output.status.success() => {},
@@ -21,7 +21,6 @@ pub fn format(path:&Path) {
 				String::from_utf8_lossy(&output.stderr)
 			);
 		},
-		Err(_) => { /*We checked `cargo` fmt presence in check_fmt, so can ignore errors*/
-		},
+		Err(_) => { /*We checked `cargo` fmt presence in check_fmt, so can ignore errors*/ },
 	}
 }

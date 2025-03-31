@@ -1,38 +1,29 @@
 use log::info;
 
 use super::{function_parameters::TransformationType, imports::Imports, *};
-use crate::{
-	codegen::Visibility,
-	config::gobjects::GObject,
-	env::Env,
-	nameutil::*,
-	traits::*,
-};
+use crate::{codegen::Visibility, config::gobjects::GObject, env::Env, nameutil::*, traits::*};
 
 #[derive(Debug, Default)]
 pub struct Info {
-	pub full_name:String,
-	pub type_id:library::TypeId,
-	pub name:String,
-	pub functions:Vec<functions::Info>,
-	pub specials:special_functions::Infos,
-	pub visibility:Visibility,
+	pub full_name: String,
+	pub type_id: library::TypeId,
+	pub name: String,
+	pub functions: Vec<functions::Info>,
+	pub specials: special_functions::Infos,
+	pub visibility: Visibility,
 }
 
 impl Info {
-	pub fn type_<'a>(
-		&self,
-		library:&'a library::Library,
-	) -> &'a library::Enumeration {
-		let type_ =
-			library.type_(self.type_id).maybe_ref().unwrap_or_else(|| {
-				panic!("{} is not an enumeration.", self.full_name)
-			});
+	pub fn type_<'a>(&self, library: &'a library::Library) -> &'a library::Enumeration {
+		let type_ = library
+			.type_(self.type_id)
+			.maybe_ref()
+			.unwrap_or_else(|| panic!("{} is not an enumeration.", self.full_name));
 		type_
 	}
 }
 
-pub fn new(env:&Env, obj:&GObject, imports:&mut Imports) -> Option<Info> {
+pub fn new(env: &Env, obj: &GObject, imports: &mut Imports) -> Option<Info> {
 	info!("Analyzing enumeration {}", obj.name);
 
 	if obj.status.ignored() {
@@ -41,7 +32,7 @@ pub fn new(env:&Env, obj:&GObject, imports:&mut Imports) -> Option<Info> {
 
 	let enumeration_tid = env.library.find_type(0, &obj.name)?;
 	let type_ = env.type_(enumeration_tid);
-	let enumeration:&library::Enumeration = type_.maybe_ref()?;
+	let enumeration: &library::Enumeration = type_.maybe_ref()?;
 
 	let name = split_namespace_name(&obj.name).1;
 
@@ -90,16 +81,9 @@ pub fn new(env:&Env, obj:&GObject, imports:&mut Imports) -> Option<Info> {
 		if first_param.typ == enumeration_tid {
 			first_param.instance_parameter = true;
 
-			let t = f
-				.parameters
-				.transformations
-				.iter_mut()
-				.find(|t| t.ind_c == 0)
-				.unwrap();
+			let t = f.parameters.transformations.iter_mut().find(|t| t.ind_c == 0).unwrap();
 
-			if let TransformationType::ToGlibScalar { name, .. } =
-				&mut t.transformation_type
-			{
+			if let TransformationType::ToGlibScalar { name, .. } = &mut t.transformation_type {
 				*name = "self".to_owned();
 			} else {
 				panic!(
@@ -118,12 +102,12 @@ pub fn new(env:&Env, obj:&GObject, imports:&mut Imports) -> Option<Info> {
 	}
 
 	let info = Info {
-		full_name:obj.name.clone(),
-		type_id:enumeration_tid,
-		name:name.to_owned(),
+		full_name: obj.name.clone(),
+		type_id: enumeration_tid,
+		name: name.to_owned(),
 		functions,
 		specials,
-		visibility:obj.visibility,
+		visibility: obj.visibility,
 	};
 
 	Some(info)

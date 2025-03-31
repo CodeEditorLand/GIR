@@ -9,16 +9,16 @@ use crate::{
 	analysis,
 	chunk::Chunk,
 	env::Env,
-	writer::{primitives::tabs, ToCode},
+	writer::{ToCode, primitives::tabs},
 };
 
 pub fn generate(
-	w:&mut dyn Write,
-	env:&Env,
-	analysis:&analysis::signals::Info,
-	in_trait:bool,
-	only_declaration:bool,
-	indent:usize,
+	w: &mut dyn Write,
+	env: &Env,
+	analysis: &analysis::signals::Info,
+	in_trait: bool,
+	only_declaration: bool,
+	indent: usize,
 ) -> Result<()> {
 	let commented = analysis.trampoline.is_err();
 	let comment_prefix = if commented { "//" } else { "" };
@@ -29,33 +29,13 @@ pub fn generate(
 	let suffix = if only_declaration { ";" } else { " {" };
 
 	writeln!(w)?;
-	cfg_deprecated(
-		w,
-		env,
-		None,
-		analysis.deprecated_version,
-		commented,
-		indent,
-	)?;
+	cfg_deprecated(w, env, None, analysis.deprecated_version, commented, indent)?;
 	version_condition(w, env, None, analysis.version, commented, indent)?;
 	doc_hidden(w, analysis.doc_hidden, comment_prefix, indent)?;
 	// Strip the "prefix" from "prefix::prop-name", if any.
 	// Ex.: "notify::is-locked".
-	doc_alias(
-		w,
-		analysis.signal_name.splitn(2, "::").last().unwrap(),
-		comment_prefix,
-		indent,
-	)?;
-	writeln!(
-		w,
-		"{}{}{}{}{}",
-		tabs(indent),
-		comment_prefix,
-		pub_prefix,
-		declaration,
-		suffix
-	)?;
+	doc_alias(w, analysis.signal_name.splitn(2, "::").last().unwrap(), comment_prefix, indent)?;
+	writeln!(w, "{}{}{}{}{}", tabs(indent), comment_prefix, pub_prefix, declaration, suffix)?;
 
 	if !only_declaration {
 		if !commented {
@@ -73,22 +53,11 @@ pub fn generate(
 			_ => {
 				if let Err(ref errors) = analysis.trampoline {
 					for error in errors {
-						writeln!(
-							w,
-							"{}{}\t{}",
-							tabs(indent),
-							comment_prefix,
-							error
-						)?;
+						writeln!(w, "{}{}\t{}", tabs(indent), comment_prefix, error)?;
 					}
 					writeln!(w, "{}{}}}", tabs(indent), comment_prefix)?;
 				} else {
-					writeln!(
-						w,
-						"{}{}\tTODO: connect to trampoline\n{0}{1}}}",
-						tabs(indent),
-						comment_prefix
-					)?;
+					writeln!(w, "{}{}\tTODO: connect to trampoline\n{0}{1}}}", tabs(indent), comment_prefix)?;
 				}
 			},
 		}
@@ -102,14 +71,7 @@ pub fn generate(
 	if let Some(ref emit_name) = analysis.action_emit_name {
 		writeln!(w)?;
 		if !in_trait || only_declaration {
-			cfg_deprecated(
-				w,
-				env,
-				None,
-				analysis.deprecated_version,
-				commented,
-				indent,
-			)?;
+			cfg_deprecated(w, env, None, analysis.deprecated_version, commented, indent)?;
 		}
 		version_condition(w, env, None, analysis.version, commented, indent)?;
 
@@ -127,18 +89,12 @@ pub fn generate(
 		)?;
 
 		if !only_declaration {
-			let trampoline =
-				analysis.trampoline.as_ref().unwrap_or_else(|_| {
-					panic!(
-						"Internal error: can't find trampoline for signal '{}'",
-						analysis.signal_name,
-					)
-				});
+			let trampoline = analysis.trampoline.as_ref().unwrap_or_else(|_| {
+				panic!("Internal error: can't find trampoline for signal '{}'", analysis.signal_name,)
+			});
 			let mut args = String::with_capacity(100);
 
-			for (pos, par) in
-				trampoline.parameters.rust_parameters.iter().enumerate()
-			{
+			for (pos, par) in trampoline.parameters.rust_parameters.iter().enumerate() {
 				// Skip the self parameter
 				if pos == 0 {
 					continue;
@@ -175,33 +131,19 @@ pub fn generate(
 	Ok(())
 }
 
-fn function_type_string(
-	env:&Env,
-	analysis:&analysis::signals::Info,
-	closure:bool,
-) -> Option<String> {
+fn function_type_string(env: &Env, analysis: &analysis::signals::Info, closure: bool) -> Option<String> {
 	analysis.trampoline.as_ref().ok()?;
 
-	let trampoline = analysis.trampoline.as_ref().unwrap_or_else(|_| {
-		panic!(
-			"Internal error: can't find trampoline for signal '{}'",
-			analysis.signal_name
-		)
-	});
+	let trampoline = analysis
+		.trampoline
+		.as_ref()
+		.unwrap_or_else(|_| panic!("Internal error: can't find trampoline for signal '{}'", analysis.signal_name));
 
-	let type_ = func_string(
-		env,
-		trampoline,
-		Some(if closure { "Self" } else { "self" }),
-		closure,
-	);
+	let type_ = func_string(env, trampoline, Some(if closure { "Self" } else { "self" }), closure);
 	Some(type_)
 }
 
-fn declaration(
-	analysis:&analysis::signals::Info,
-	function_type:&Option<String>,
-) -> String {
+fn declaration(analysis: &analysis::signals::Info, function_type: &Option<String>) -> String {
 	let bounds = bounds(function_type);
 	let param_str = if !analysis.is_detailed {
 		"&self, f: F"
@@ -209,20 +151,17 @@ fn declaration(
 		"&self, detail: Option<&str>, f: F"
 	};
 	let return_str = " -> SignalHandlerId";
-	format!(
-		"fn {}<{}>({}){}",
-		analysis.connect_name, bounds, param_str, return_str
-	)
+	format!("fn {}<{}>({}){}", analysis.connect_name, bounds, param_str, return_str)
 }
 
-fn bounds(function_type:&Option<String>) -> String {
+fn bounds(function_type: &Option<String>) -> String {
 	match function_type {
 		Some(type_) => format!("F: {type_}"),
 		_ => "Unsupported or ignored types".to_owned(),
 	}
 }
 
-fn body(analysis:&analysis::signals::Info, in_trait:bool) -> Chunk {
+fn body(analysis: &analysis::signals::Info, in_trait: bool) -> Chunk {
 	let mut builder = signal_body::Builder::new();
 
 	builder

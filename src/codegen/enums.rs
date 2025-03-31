@@ -1,6 +1,6 @@
 use std::{
 	collections::HashSet,
-	io::{prelude::*, Result},
+	io::{Result, prelude::*},
 	path::Path,
 };
 
@@ -9,17 +9,8 @@ use crate::{
 	analysis::enums::Info,
 	codegen::{
 		general::{
-			self,
-			allow_deprecated,
-			cfg_condition,
-			cfg_condition_no_doc,
-			cfg_condition_string,
-			cfg_deprecated,
-			derives,
-			doc_alias,
-			version_condition,
-			version_condition_no_doc,
-			version_condition_string,
+			self, allow_deprecated, cfg_condition, cfg_condition_no_doc, cfg_condition_string, cfg_deprecated, derives,
+			doc_alias, version_condition, version_condition_no_doc, version_condition_string,
 		},
 		generate_default_impl,
 	},
@@ -32,7 +23,7 @@ use crate::{
 	version::Version,
 };
 
-pub fn generate(env:&Env, root_path:&Path, mod_rs:&mut Vec<String>) {
+pub fn generate(env: &Env, root_path: &Path, mod_rs: &mut Vec<String>) {
 	if !env
 		.analysis
 		.enumerations
@@ -57,22 +48,15 @@ pub fn generate(env:&Env, root_path:&Path, mod_rs:&mut Vec<String>) {
 
 			let enum_ = enum_analysis.type_(&env.library);
 
-			if let Some(cfg) =
-				version_condition_string(env, None, enum_.version, false, 0)
-			{
+			if let Some(cfg) = version_condition_string(env, None, enum_.version, false, 0) {
 				mod_rs.push(cfg);
 			}
-			if let Some(cfg) =
-				cfg_condition_string(config.cfg_condition.as_ref(), false, 0)
-			{
+			if let Some(cfg) = cfg_condition_string(config.cfg_condition.as_ref(), false, 0) {
 				mod_rs.push(cfg);
 			}
 			mod_rs.push(format!(
 				"{}{} use self::enums::{};",
-				enum_
-					.deprecated_version
-					.map(|_| "#[allow(deprecated)]\n")
-					.unwrap_or(""),
+				enum_.deprecated_version.map(|_| "#[allow(deprecated)]\n").unwrap_or(""),
 				enum_analysis.visibility.export_visibility(),
 				enum_.name
 			));
@@ -84,23 +68,17 @@ pub fn generate(env:&Env, root_path:&Path, mod_rs:&mut Vec<String>) {
 	});
 }
 
-fn generate_enum(
-	env:&Env,
-	w:&mut dyn Write,
-	enum_:&Enumeration,
-	config:&GObject,
-	analysis:&Info,
-) -> Result<()> {
+fn generate_enum(env: &Env, w: &mut dyn Write, enum_: &Enumeration, config: &GObject, analysis: &Info) -> Result<()> {
 	struct Member<'a> {
-		name:String,
-		c_name:String,
-		version:Option<Version>,
-		deprecated_version:Option<Version>,
-		cfg_condition:Option<&'a String>,
+		name: String,
+		c_name: String,
+		version: Option<Version>,
+		deprecated_version: Option<Version>,
+		cfg_condition: Option<&'a String>,
 	}
 
-	let mut members:Vec<Member<'_>> = Vec::new();
-	let mut vals:HashSet<String> = HashSet::new();
+	let mut members: Vec<Member<'_>> = Vec::new();
+	let mut vals: HashSet<String> = HashSet::new();
 	let sys_crate_name = env.sys_crate_import(analysis.type_id);
 
 	for member in &enum_.members {
@@ -113,27 +91,18 @@ fn generate_enum(
 			.iter()
 			.find_map(|m| m.deprecated_version)
 			.or(member.deprecated_version);
-		let version =
-			member_config.iter().find_map(|m| m.version).or(member.version);
-		let cfg_condition =
-			member_config.iter().find_map(|m| m.cfg_condition.as_ref());
+		let version = member_config.iter().find_map(|m| m.version).or(member.version);
+		let cfg_condition = member_config.iter().find_map(|m| m.cfg_condition.as_ref());
 		members.push(Member {
-			name:enum_member_name(&member.name),
-			c_name:member.c_identifier.clone(),
+			name: enum_member_name(&member.name),
+			c_name: member.c_identifier.clone(),
 			version,
 			deprecated_version,
 			cfg_condition,
 		});
 	}
 
-	cfg_deprecated(
-		w,
-		env,
-		Some(analysis.type_id),
-		enum_.deprecated_version,
-		false,
-		0,
-	)?;
+	cfg_deprecated(w, env, Some(analysis.type_id), enum_.deprecated_version, false, 0)?;
 	version_condition(w, env, None, enum_.version, false, 0)?;
 	cfg_condition(w, config.cfg_condition.as_ref(), false, 0)?;
 	if config.must_use {
@@ -155,14 +124,7 @@ fn generate_enum(
 
 	writeln!(w, "{} enum {} {{", analysis.visibility, enum_.name)?;
 	for member in &members {
-		cfg_deprecated(
-			w,
-			env,
-			Some(analysis.type_id),
-			member.deprecated_version,
-			false,
-			1,
-		)?;
+		cfg_deprecated(w, env, Some(analysis.type_id), member.deprecated_version, false, 1)?;
 		version_condition(w, env, None, member.version, false, 1)?;
 		cfg_condition(w, member.cfg_condition.as_ref(), false, 1)?;
 		// Don't generate a doc_alias if the C name is the same as the Rust one
@@ -170,11 +132,7 @@ fn generate_enum(
 			doc_alias(w, &member.c_name, "", 1)?;
 		}
 		if config.exhaustive {
-			writeln!(
-				w,
-				"\t{} = {}::{},",
-				member.name, sys_crate_name, member.c_name
-			)?;
+			writeln!(w, "\t{} = {}::{},", member.name, sys_crate_name, member.c_name)?;
 		} else {
 			writeln!(w, "\t{},", member.name)?;
 		}
@@ -238,11 +196,7 @@ fn generate_enum(
 
 	// Only inline from_glib / into_glib implementations if there are not many
 	// enums members
-	let maybe_inline = if members.len() <= 12 || config.exhaustive {
-		"#[inline]\n"
-	} else {
-		""
-	};
+	let maybe_inline = if members.len() <= 12 || config.exhaustive { "#[inline]\n" } else { "" };
 
 	// Generate IntoGlib trait implementation.
 	version_condition(w, env, None, enum_.version, false, 0)?;
@@ -273,11 +227,7 @@ impl IntoGlib for {name} {{
 		for member in &members {
 			version_condition_no_doc(w, env, None, member.version, false, 3)?;
 			cfg_condition_no_doc(w, member.cfg_condition.as_ref(), false, 3)?;
-			writeln!(
-				w,
-				"\t\t\tSelf::{} => {}::{},",
-				member.name, sys_crate_name, member.c_name
-			)?;
+			writeln!(w, "\t\t\tSelf::{} => {}::{},", member.name, sys_crate_name, member.c_name)?;
 		}
 		writeln!(w, "\t\t\tSelf::__Unknown(value) => value,")?;
 		writeln!(
@@ -331,11 +281,7 @@ impl FromGlib<{sys_crate_name}::{ffi_name}> for {name} {{
 		for member in &members {
 			version_condition_no_doc(w, env, None, member.version, false, 3)?;
 			cfg_condition_no_doc(w, member.cfg_condition.as_ref(), false, 3)?;
-			writeln!(
-				w,
-				"\t\t\t{}::{} => Self::{},",
-				sys_crate_name, member.c_name, member.name
-			)?;
+			writeln!(w, "\t\t\t{}::{} => Self::{},", sys_crate_name, member.c_name, member.name)?;
 		}
 		writeln!(w, "\t\t\tvalue => Self::__Unknown(value),")?;
 		writeln!(
@@ -389,10 +335,7 @@ impl FromGlib<{sys_crate_name}::{ffi_name}> for {name} {{
 				)?;
 			},
 			ErrorDomain::Function(f) => {
-				writeln!(
-					w,
-					"        unsafe {{ from_glib({sys_crate_name}::{f}()) }}"
-				)?;
+				writeln!(w, "        unsafe {{ from_glib({sys_crate_name}::{f}()) }}")?;
 			},
 		}
 
@@ -506,8 +449,7 @@ impl FromGlib<{sys_crate_name}::{ffi_name}> for {name} {{
 			name = enum_.name,
 			glib = use_glib_type(env, "gobject_ffi::g_value_get_enum"),
 			gvalue = use_glib_type(env, "Value"),
-			genericwrongvaluetypechecker =
-				use_glib_type(env, "value::GenericValueTypeChecker"),
+			genericwrongvaluetypechecker = use_glib_type(env, "value::GenericValueTypeChecker"),
 			assert = assert,
 			from_value_type = use_glib_type(env, "value::FromValue"),
 		)?;
@@ -558,26 +500,13 @@ impl FromGlib<{sys_crate_name}::{ffi_name}> for {name} {{
 		writeln!(w)?;
 	}
 
-	generate_default_impl(
-		w,
-		env,
-		config,
-		&enum_.name,
-		enum_.version,
-		enum_.members.iter(),
-		|member| {
-			let e_member =
-				members.iter().find(|m| m.c_name == member.c_identifier)?;
-			let member_config = config.members.matched(&member.name);
-			let version = member_config
-				.iter()
-				.find_map(|m| m.version)
-				.or(e_member.version);
-			let cfg_condition =
-				member_config.iter().find_map(|m| m.cfg_condition.as_ref());
-			Some((version, cfg_condition, e_member.name.as_str()))
-		},
-	)?;
+	generate_default_impl(w, env, config, &enum_.name, enum_.version, enum_.members.iter(), |member| {
+		let e_member = members.iter().find(|m| m.c_name == member.c_identifier)?;
+		let member_config = config.members.matched(&member.name);
+		let version = member_config.iter().find_map(|m| m.version).or(e_member.version);
+		let cfg_condition = member_config.iter().find_map(|m| m.cfg_condition.as_ref());
+		Some((version, cfg_condition, e_member.name.as_str()))
+	})?;
 
 	Ok(())
 }

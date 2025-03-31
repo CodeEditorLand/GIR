@@ -38,9 +38,7 @@ mod xmlparser;
 
 pub use crate::{
 	analysis::{
-		class_hierarchy::run as class_hierarchy_run,
-		namespaces::run as namespaces_run,
-		run as analysis_run,
+		class_hierarchy::run as class_hierarchy_run, namespaces::run as namespaces_run, run as analysis_run,
 		symbols::run as symbols_run,
 	},
 	codegen::generate as codegen_generate,

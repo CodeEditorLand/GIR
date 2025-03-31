@@ -11,16 +11,16 @@ use crate::{
 	library,
 	nameutil::use_gtk_type,
 	traits::IntoString,
-	writer::{primitives::tabs, ToCode},
+	writer::{ToCode, primitives::tabs},
 };
 
 pub fn generate(
-	w:&mut dyn Write,
-	env:&Env,
-	prop:&ChildProperty,
-	in_trait:bool,
-	only_declaration:bool,
-	indent:usize,
+	w: &mut dyn Write,
+	env: &Env,
+	prop: &ChildProperty,
+	in_trait: bool,
+	only_declaration: bool,
+	indent: usize,
 ) -> Result<()> {
 	generate_func(w, env, prop, in_trait, only_declaration, indent, true)?;
 	generate_func(w, env, prop, in_trait, only_declaration, indent, false)?;
@@ -29,13 +29,13 @@ pub fn generate(
 }
 
 fn generate_func(
-	w:&mut dyn Write,
-	env:&Env,
-	prop:&ChildProperty,
-	in_trait:bool,
-	only_declaration:bool,
-	indent:usize,
-	is_get:bool,
+	w: &mut dyn Write,
+	env: &Env,
+	prop: &ChildProperty,
+	in_trait: bool,
+	only_declaration: bool,
+	indent: usize,
+	is_get: bool,
 ) -> Result<()> {
 	let pub_prefix = if in_trait { "" } else { "pub " };
 	let decl_suffix = if only_declaration { ";" } else { " {" };
@@ -52,22 +52,9 @@ fn generate_func(
 		prop.name != prop.prop_name
 	};
 	if add_doc_alias {
-		doc_alias(
-			w,
-			&format!("{}.{}", &prop.child_name, &prop.name),
-			comment_prefix,
-			indent,
-		)?;
+		doc_alias(w, &format!("{}.{}", &prop.child_name, &prop.name), comment_prefix, indent)?;
 	}
-	writeln!(
-		w,
-		"{}{}{}{}{}",
-		tabs(indent),
-		comment_prefix,
-		pub_prefix,
-		decl,
-		decl_suffix
-	)?;
+	writeln!(w, "{}{}{}{}{}", tabs(indent), comment_prefix, pub_prefix, decl, decl_suffix)?;
 
 	if !only_declaration {
 		let body = body(env, prop, in_trait, is_get).to_code(env);
@@ -79,7 +66,7 @@ fn generate_func(
 	Ok(())
 }
 
-fn declaration(env:&Env, prop:&ChildProperty, is_get:bool) -> String {
+fn declaration(env: &Env, prop: &ChildProperty, is_get: bool) -> String {
 	let func_name = if is_get {
 		format!("{}_{}", prop.child_name, prop.getter_name)
 	} else {
@@ -115,7 +102,7 @@ fn declaration(env:&Env, prop:&ChildProperty, is_get:bool) -> String {
 	)
 }
 
-fn body(env:&Env, prop:&ChildProperty, in_trait:bool, is_get:bool) -> Chunk {
+fn body(env: &Env, prop: &ChildProperty, in_trait: bool, is_get: bool) -> Chunk {
 	let mut builder = property_body::Builder::new_for_child_property(env);
 	builder
 		.name(&prop.name)

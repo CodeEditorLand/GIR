@@ -4,7 +4,7 @@ use getopts::Options;
 use hprof::Profiler;
 use libgir::{self as gir, Config, Library, WorkMode};
 
-fn print_usage(program:&str, opts:Options) {
+fn print_usage(program: &str, opts: Options) {
 	let brief = format!(
 		"Usage: {program} [options] [<library> <version>]
        {program} (-h | --help)"
@@ -16,7 +16,7 @@ trait OptionStr {
 	fn as_str_ref(&self) -> Option<&str>;
 }
 
-impl<S:AsRef<str>> OptionStr for Option<S> {
+impl<S: AsRef<str>> OptionStr for Option<S> {
 	fn as_str_ref(&self) -> Option<&str> {
 		self.as_ref().map(|string| string.as_ref())
 	}
@@ -28,40 +28,20 @@ enum RunKind {
 }
 
 fn build_config() -> Result<RunKind, String> {
-	let args:Vec<_> = env::args().collect();
+	let args: Vec<_> = env::args().collect();
 	let program = args[0].clone();
 
 	let mut options = Options::new();
-	options.optopt(
-		"c",
-		"config",
-		"Config file path (default: Gir.toml)",
-		"CONFIG",
-	);
+	options.optopt("c", "config", "Config file path (default: Gir.toml)", "CONFIG");
 	options.optflag("h", "help", "Show this message");
-	options.optmulti(
-		"d",
-		"girs-directories",
-		"Directories for GIR files",
-		"GIRSPATH",
-	);
-	options.optopt(
-		"m",
-		"mode",
-		"Work mode: doc, normal, sys or not_bound",
-		"MODE",
-	);
+	options.optmulti("d", "girs-directories", "Directories for GIR files", "GIRSPATH");
+	options.optopt("m", "mode", "Work mode: doc, normal, sys or not_bound", "MODE");
 	options.optopt("o", "target", "Target path", "PATH");
 	options.optopt("p", "doc-target-path", "Doc target path", "PATH");
 	options.optflag("b", "make-backup", "Make backup before generating");
 	options.optflag("s", "stats", "Show statistics");
 	options.optflag("", "disable-format", "Disable formatting generated code");
-	options.optopt(
-		"",
-		"check-gir-file",
-		"Check if the given `.gir` file is valid",
-		"PATH",
-	);
+	options.optopt("", "check-gir-file", "Check if the given `.gir` file is valid", "PATH");
 
 	let matches = options.parse(&args[1..]).map_err(|e| e.to_string())?;
 
@@ -76,14 +56,12 @@ fn build_config() -> Result<RunKind, String> {
 
 	let work_mode = match matches.opt_str("m") {
 		None => None,
-		Some(s) => {
-			match WorkMode::from_str(&s) {
-				Ok(w) => Some(w),
-				Err(e) => {
-					eprintln!("Error (switching to default work mode): {e}");
-					None
-				},
-			}
+		Some(s) => match WorkMode::from_str(&s) {
+			Ok(w) => Some(w),
+			Err(e) => {
+				eprintln!("Error (switching to default work mode): {e}");
+				None
+			},
 		},
 	};
 
@@ -102,7 +80,7 @@ fn build_config() -> Result<RunKind, String> {
 	.map(RunKind::Config)
 }
 
-fn run_check(check_gir_file:&str) -> Result<(), String> {
+fn run_check(check_gir_file: &str) -> Result<(), String> {
 	let path = PathBuf::from(check_gir_file);
 	if !path.is_file() {
 		return Err(format!("`{check_gir_file}`: file not found",));
@@ -110,13 +88,11 @@ fn run_check(check_gir_file:&str) -> Result<(), String> {
 	let lib_name = path
 		.file_stem()
 		.ok_or(format!("Failed to get file stem from `{check_gir_file}`",))?;
-	let lib_name = lib_name
-		.to_str()
-		.ok_or_else(|| "failed to convert OsStr to str".to_owned())?;
+	let lib_name = lib_name.to_str().ok_or_else(|| "failed to convert OsStr to str".to_owned())?;
 	let mut library = Library::new(lib_name);
-	let parent = path.parent().ok_or(format!(
-		"Failed to get parent directory from `{check_gir_file}`",
-	))?;
+	let parent = path
+		.parent()
+		.ok_or(format!("Failed to get parent directory from `{check_gir_file}`",))?;
 
 	library.read_file(&[parent], &mut vec![lib_name.to_owned()])
 }
@@ -145,8 +121,7 @@ fn main() -> Result<(), String> {
 		let _watcher = statistics.enter("Loading");
 
 		let mut library = Library::new(&cfg.library_name);
-		library
-			.read_file(&cfg.girs_dirs, &mut vec![cfg.library_full_name()])?;
+		library.read_file(&cfg.girs_dirs, &mut vec![cfg.library_full_name()])?;
 		library
 	};
 
@@ -184,11 +159,11 @@ fn main() -> Result<(), String> {
 
 		gir::Env {
 			library,
-			config:cfg,
+			config: cfg,
 			namespaces,
-			symbols:RefCell::new(symbols),
+			symbols: RefCell::new(symbols),
 			class_hierarchy,
-			analysis:Default::default(),
+			analysis: Default::default(),
 		}
 	};
 
@@ -202,9 +177,7 @@ fn main() -> Result<(), String> {
 		gir::codegen_generate(&env);
 	}
 
-	if !env.config.disable_format
-		&& env.config.work_mode.is_generate_rust_files()
-	{
+	if !env.config.disable_format && env.config.work_mode.is_generate_rust_files() {
 		let _watcher = statistics.enter("Formatting");
 		gir::fmt::format(&env.config.target_path);
 	}

@@ -27,7 +27,7 @@ pub enum TransformationType {
 impl FromStr for TransformationType {
 	type Err = String;
 
-	fn from_str(s:&str) -> Result<Self, Self::Err> {
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		match s {
 			"none" => Ok(Self::None),
 			"borrow" => Ok(Self::Borrow),
@@ -39,20 +39,16 @@ impl FromStr for TransformationType {
 
 #[derive(Clone, Debug)]
 pub struct Parameter {
-	pub ident:Ident,
-	pub nullable:Option<Nullable>,
-	pub transformation:Option<TransformationType>,
-	pub new_name:Option<String>,
+	pub ident: Ident,
+	pub nullable: Option<Nullable>,
+	pub transformation: Option<TransformationType>,
+	pub new_name: Option<String>,
 }
 
 impl Parse for Parameter {
-	fn parse(toml:&Value, object_name:&str) -> Option<Self> {
-		let Some(ident) = Ident::parse(toml, object_name, "signal parameter")
-		else {
-			error!(
-				"No 'name' or 'pattern' given for parameter for object {}",
-				object_name
-			);
+	fn parse(toml: &Value, object_name: &str) -> Option<Self> {
+		let Some(ident) = Ident::parse(toml, object_name, "signal parameter") else {
+			error!("No 'name' or 'pattern' given for parameter for object {}", object_name);
 			return None;
 		};
 		toml.check_unwanted(
@@ -60,59 +56,47 @@ impl Parse for Parameter {
 			&format!("parameter {object_name}"),
 		);
 
-		let nullable =
-			toml.lookup("nullable").and_then(Value::as_bool).map(Nullable);
-		let transformation = toml
-			.lookup("transformation")
-			.and_then(Value::as_str)
-			.and_then(|s| {
-				TransformationType::from_str(s)
-					.map_err(|err| {
-						error!("{0}", err);
-						err
-					})
-					.ok()
-			});
-		let new_name = toml
-			.lookup("new_name")
-			.and_then(Value::as_str)
-			.map(ToOwned::to_owned);
+		let nullable = toml.lookup("nullable").and_then(Value::as_bool).map(Nullable);
+		let transformation = toml.lookup("transformation").and_then(Value::as_str).and_then(|s| {
+			TransformationType::from_str(s)
+				.map_err(|err| {
+					error!("{0}", err);
+					err
+				})
+				.ok()
+		});
+		let new_name = toml.lookup("new_name").and_then(Value::as_str).map(ToOwned::to_owned);
 
 		Some(Self { ident, nullable, transformation, new_name })
 	}
 }
 
 impl AsRef<Ident> for Parameter {
-	fn as_ref(&self) -> &Ident { &self.ident }
+	fn as_ref(&self) -> &Ident {
+		&self.ident
+	}
 }
 
 pub type Parameters = Vec<Parameter>;
 
 #[derive(Clone, Debug)]
 pub struct Signal {
-	pub ident:Ident,
-	pub status:GStatus,
-	pub inhibit:bool,
-	pub version:Option<Version>,
-	pub parameters:Parameters,
-	pub ret:Return,
-	pub concurrency:library::Concurrency,
-	pub doc_hidden:bool,
-	pub doc_trait_name:Option<String>,
-	pub generate_doc:bool,
+	pub ident: Ident,
+	pub status: GStatus,
+	pub inhibit: bool,
+	pub version: Option<Version>,
+	pub parameters: Parameters,
+	pub ret: Return,
+	pub concurrency: library::Concurrency,
+	pub doc_hidden: bool,
+	pub doc_trait_name: Option<String>,
+	pub generate_doc: bool,
 }
 
 impl Signal {
-	pub fn parse(
-		toml:&Value,
-		object_name:&str,
-		concurrency:library::Concurrency,
-	) -> Option<Self> {
+	pub fn parse(toml: &Value, object_name: &str, concurrency: library::Concurrency) -> Option<Self> {
 		let Some(ident) = Ident::parse(toml, object_name, "signal") else {
-			error!(
-				"No 'name' or 'pattern' given for signal for object {}",
-				object_name
-			);
+			error!("No 'name' or 'pattern' given for signal for object {}", object_name);
 			return None;
 		};
 		toml.check_unwanted(
@@ -136,25 +120,16 @@ impl Signal {
 		let status = {
 			if toml.lookup("ignore").and_then(Value::as_bool).unwrap_or(false) {
 				GStatus::Ignore
-			} else if toml
-				.lookup("manual")
-				.and_then(Value::as_bool)
-				.unwrap_or(false)
-			{
+			} else if toml.lookup("manual").and_then(Value::as_bool).unwrap_or(false) {
 				GStatus::Manual
 			} else {
 				GStatus::Generate
 			}
 		};
 
-		let inhibit =
-			toml.lookup("inhibit").and_then(Value::as_bool).unwrap_or(false);
-		let version = toml
-			.lookup("version")
-			.and_then(Value::as_str)
-			.and_then(|s| s.parse().ok());
-		let parameters =
-			Parameters::parse(toml.lookup("parameter"), object_name);
+		let inhibit = toml.lookup("inhibit").and_then(Value::as_bool).unwrap_or(false);
+		let version = toml.lookup("version").and_then(Value::as_str).and_then(|s| s.parse().ok());
+		let parameters = Parameters::parse(toml.lookup("parameter"), object_name);
 		let ret = Return::parse(toml.lookup("return"), object_name);
 
 		let concurrency = toml
@@ -163,16 +138,9 @@ impl Signal {
 			.and_then(|v| v.parse().ok())
 			.unwrap_or(concurrency);
 
-		let doc_hidden =
-			toml.lookup("doc_hidden").and_then(Value::as_bool).unwrap_or(false);
-		let doc_trait_name = toml
-			.lookup("doc_trait_name")
-			.and_then(Value::as_str)
-			.map(ToOwned::to_owned);
-		let generate_doc = toml
-			.lookup("generate_doc")
-			.and_then(Value::as_bool)
-			.unwrap_or(true);
+		let doc_hidden = toml.lookup("doc_hidden").and_then(Value::as_bool).unwrap_or(false);
+		let doc_trait_name = toml.lookup("doc_trait_name").and_then(Value::as_str).map(ToOwned::to_owned);
+		let generate_doc = toml.lookup("generate_doc").and_then(Value::as_bool).unwrap_or(true);
 
 		Some(Self {
 			ident,
@@ -192,11 +160,15 @@ impl Signal {
 impl Functionlike for Signal {
 	type Parameter = self::Parameter;
 
-	fn parameters(&self) -> &[Self::Parameter] { &self.parameters }
+	fn parameters(&self) -> &[Self::Parameter] {
+		&self.parameters
+	}
 }
 
 impl AsRef<Ident> for Signal {
-	fn as_ref(&self) -> &Ident { &self.ident }
+	fn as_ref(&self) -> &Ident {
+		&self.ident
+	}
 }
 
 pub type Signals = Vec<Signal>;
@@ -205,7 +177,7 @@ pub type Signals = Vec<Signal>;
 mod tests {
 	use super::{super::ident::Ident, *};
 
-	fn toml(input:&str) -> ::toml::Value {
+	fn toml(input: &str) -> ::toml::Value {
 		let value = input.parse::<::toml::Value>();
 		assert!(value.is_ok());
 		value.unwrap()

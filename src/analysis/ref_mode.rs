@@ -17,7 +17,7 @@ pub enum RefMode {
 impl FromStr for RefMode {
 	type Err = String;
 
-	fn from_str(s:&str) -> Result<Self, Self::Err> {
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		match s {
 			"none" => Ok(Self::None),
 			"ref" => Ok(Self::ByRef),
@@ -31,18 +31,12 @@ impl FromStr for RefMode {
 
 impl RefMode {
 	#[inline]
-	pub fn of(
-		env:&env::Env,
-		tid:library::TypeId,
-		direction:library::ParameterDirection,
-	) -> Self {
+	pub fn of(env: &env::Env, tid: library::TypeId, direction: library::ParameterDirection) -> Self {
 		use crate::library::Type::*;
 
 		let library = &env.library;
 
-		if let Some(&GObject { ref_mode: Some(ref_mode), .. }) =
-			env.config.objects.get(&tid.full_name(library))
-		{
+		if let Some(&GObject { ref_mode: Some(ref_mode), .. }) = env.config.objects.get(&tid.full_name(library)) {
 			if direction == library::ParameterDirection::In {
 				return ref_mode;
 			} else {
@@ -51,11 +45,7 @@ impl RefMode {
 		}
 
 		match library.type_(tid) {
-			Basic(
-				library::Basic::Utf8
-				| library::Basic::Filename
-				| library::Basic::OsString,
-			)
+			Basic(library::Basic::Utf8 | library::Basic::Filename | library::Basic::OsString)
 			| Class(..)
 			| Interface(..)
 			| List(..)
@@ -92,18 +82,16 @@ impl RefMode {
 	}
 
 	pub fn without_unneeded_mut(
-		env:&env::Env,
-		par:&library::Parameter,
-		immutable:bool,
-		self_in_trait:bool,
+		env: &env::Env,
+		par: &library::Parameter,
+		immutable: bool,
+		self_in_trait: bool,
 	) -> Self {
 		let ref_mode = Self::of(env, par.typ, par.direction);
 		match ref_mode {
 			Self::ByRefMut if !is_mut_ptr(&par.c_type) => Self::ByRef,
 			Self::ByRefMut if immutable => Self::ByRefImmut,
-			Self::ByRef if self_in_trait && !is_mut_ptr(&par.c_type) => {
-				Self::ByRefConst
-			},
+			Self::ByRef if self_in_trait && !is_mut_ptr(&par.c_type) => Self::ByRefConst,
 			ref_mode => ref_mode,
 		}
 	}

@@ -1,10 +1,10 @@
 use std::{borrow::Cow, sync::Arc};
 
 use crate::{
+	Env,
 	analysis::conversion_type::ConversionType,
 	config,
 	library::{self, Infallible, Mandatory},
-	Env,
 };
 
 #[derive(Default, Clone, Debug)]
@@ -15,20 +15,20 @@ pub enum TryFromGlib {
 	Option,
 	OptionMandatory,
 	Result {
-		ok_type:Arc<str>,
-		err_type:Arc<str>,
+		ok_type: Arc<str>,
+		err_type: Arc<str>,
 	},
 	ResultInfallible {
-		ok_type:Arc<str>,
+		ok_type: Arc<str>,
 	},
 }
 
 impl TryFromGlib {
 	fn _new(
-		env:&Env,
-		type_id:library::TypeId,
-		mut config_mandatory:impl Iterator<Item = Mandatory>,
-		mut config_infallible:impl Iterator<Item = Infallible>,
+		env: &Env,
+		type_id: library::TypeId,
+		mut config_mandatory: impl Iterator<Item = Mandatory>,
+		mut config_infallible: impl Iterator<Item = Infallible>,
 	) -> Self {
 		let conversion_type = ConversionType::of(env, type_id);
 		match conversion_type {
@@ -41,41 +41,30 @@ impl TryFromGlib {
 			},
 			ConversionType::Result { ok_type, err_type } => {
 				if *config_infallible.next().unwrap_or(Infallible(false)) {
-					TryFromGlib::ResultInfallible {
-						ok_type:Arc::clone(&ok_type),
-					}
+					TryFromGlib::ResultInfallible { ok_type: Arc::clone(&ok_type) }
 				} else {
-					TryFromGlib::Result {
-						ok_type:Arc::clone(&ok_type),
-						err_type:Arc::clone(&err_type),
-					}
+					TryFromGlib::Result { ok_type: Arc::clone(&ok_type), err_type: Arc::clone(&err_type) }
 				}
 			},
 			_ => TryFromGlib::NotImplemented,
 		}
 	}
 
-	pub fn from_type_defaults(env:&Env, type_id:library::TypeId) -> Self {
+	pub fn from_type_defaults(env: &Env, type_id: library::TypeId) -> Self {
 		Self::_new(env, type_id, None.into_iter(), None.into_iter())
 	}
 
-	pub fn or_type_defaults(
-		&self,
-		env:&Env,
-		type_id:library::TypeId,
-	) -> Cow<'_, Self> {
+	pub fn or_type_defaults(&self, env: &Env, type_id: library::TypeId) -> Cow<'_, Self> {
 		match self {
-			TryFromGlib::Default => {
-				Cow::Owned(Self::from_type_defaults(env, type_id))
-			},
+			TryFromGlib::Default => Cow::Owned(Self::from_type_defaults(env, type_id)),
 			other => Cow::Borrowed(other),
 		}
 	}
 
 	pub fn from_parameter(
-		env:&Env,
-		type_id:library::TypeId,
-		configured_parameters:&[&config::functions::Parameter],
+		env: &Env,
+		type_id: library::TypeId,
+		configured_parameters: &[&config::functions::Parameter],
 	) -> Self {
 		Self::_new(
 			env,
@@ -86,9 +75,9 @@ impl TryFromGlib {
 	}
 
 	pub fn from_return_value(
-		env:&Env,
-		type_id:library::TypeId,
-		configured_functions:&[&config::functions::Function],
+		env: &Env,
+		type_id: library::TypeId,
+		configured_functions: &[&config::functions::Function],
 	) -> Self {
 		Self::_new(
 			env,

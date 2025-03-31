@@ -18,26 +18,26 @@ use xml::{
 /// NOTE: After parser returns an error its further behaviour is unspecified.
 pub struct XmlParser<'a> {
 	/// Inner XML parser doing actual work.
-	parser:EventReader<Box<dyn 'a + Read>>,
+	parser: EventReader<Box<dyn 'a + Read>>,
 	/// Next event to be returned.
 	///
 	/// Takes priority over events returned from inner parser.
 	/// Used to support peaking one element ahead.
-	peek_event:Option<Result<XmlEvent, String>>,
+	peek_event: Option<Result<XmlEvent, String>>,
 	/// Position on peek event if any.
-	peek_position:TextPosition,
+	peek_position: TextPosition,
 	/// Used to emits errors. Rc so that it can be cheaply shared with Element
 	/// type.
-	error_emitter:Rc<ErrorEmitter>,
+	error_emitter: Rc<ErrorEmitter>,
 }
 
 struct ErrorEmitter {
 	/// Path to currently parsed document.
-	path:Option<PathBuf>,
+	path: Option<PathBuf>,
 }
 
 impl ErrorEmitter {
-	pub fn emit(&self, message:&str, position:TextPosition) -> String {
+	pub fn emit(&self, message: &str, position: TextPosition) -> String {
 		let enriched = match self.path {
 			Some(ref path) => {
 				format!("{} at line {}: {}", path.display(), position, message)
@@ -47,7 +47,7 @@ impl ErrorEmitter {
 		format!("GirXml: {enriched}")
 	}
 
-	pub fn emit_error(&self, error:&xml::reader::Error) -> String {
+	pub fn emit_error(&self, error: &xml::reader::Error) -> String {
 		// Error returned by EventReader already includes the position.
 		// That is why we have a separate implementation that only
 		// prepends the file path.
@@ -64,18 +64,20 @@ pub struct Document;
 
 /// A wrapper for `XmlEvent::StartElement` which doesn't have its own type.
 pub struct Element {
-	name:OwnedName,
-	attributes:Vec<OwnedAttribute>,
-	position:TextPosition,
-	error_emitter:Rc<ErrorEmitter>,
+	name: OwnedName,
+	attributes: Vec<OwnedAttribute>,
+	position: TextPosition,
+	error_emitter: Rc<ErrorEmitter>,
 }
 
 impl Element {
 	/// Returns the element local name.
-	pub fn name(&self) -> &str { &self.name.local_name }
+	pub fn name(&self) -> &str {
+		&self.name.local_name
+	}
 
 	/// Value of attribute with given name or None if it is not found.
-	pub fn attr(&self, name:&str) -> Option<&str> {
+	pub fn attr(&self, name: &str) -> Option<&str> {
 		for attr in &self.attributes {
 			if attr.name.local_name == name {
 				return Some(&attr.value);
@@ -85,9 +87,11 @@ impl Element {
 	}
 
 	/// Checks if elements has any attributes.
-	pub fn has_attrs(&self) -> bool { !self.attributes.is_empty() }
+	pub fn has_attrs(&self) -> bool {
+		!self.attributes.is_empty()
+	}
 
-	pub fn attr_bool(&self, name:&str, default:bool) -> bool {
+	pub fn attr_bool(&self, name: &str, default: bool) -> bool {
 		for attr in &self.attributes {
 			if attr.name.local_name == name {
 				return attr.value == "1";
@@ -96,20 +100,17 @@ impl Element {
 		default
 	}
 
-	pub fn attr_from_str<T>(&self, name:&str) -> Result<Option<T>, String>
+	pub fn attr_from_str<T>(&self, name: &str) -> Result<Option<T>, String>
 	where
 		T: str::FromStr,
-		T::Err: fmt::Display, {
+		T::Err: fmt::Display,
+	{
 		if let Some(value_str) = self.attr(name) {
 			match T::from_str(value_str) {
 				Ok(value) => Ok(Some(value)),
 				Err(error) => {
-					let message = format!(
-						"Attribute `{}` on element <{}> has invalid value: {}",
-						name,
-						self.name(),
-						error
-					);
+					let message =
+						format!("Attribute `{}` on element <{}> has invalid value: {}", name, self.name(), error);
 					Err(self.error_emitter.emit(&message, self.position))
 				},
 			}
@@ -119,73 +120,61 @@ impl Element {
 	}
 
 	/// Returns element position.
-	pub fn position(&self) -> TextPosition { self.position }
+	pub fn position(&self) -> TextPosition {
+		self.position
+	}
 
 	/// Value of attribute with given name or an error when absent.
-	pub fn attr_required(&self, name:&str) -> Result<&str, String> {
+	pub fn attr_required(&self, name: &str) -> Result<&str, String> {
 		for attr in &self.attributes {
 			if attr.name.local_name == name {
 				return Ok(&attr.value);
 			}
 		}
-		let message = format!(
-			"Attribute `{}` on element <{}> is required.",
-			name,
-			self.name()
-		);
+		let message = format!("Attribute `{}` on element <{}> is required.", name, self.name());
 		Err(self.error_emitter.emit(&message, self.position))
 	}
 }
 
 impl<'a> XmlParser<'a> {
-	pub fn from_path(path:&Path) -> Result<XmlParser<'_>, String> {
+	pub fn from_path(path: &Path) -> Result<XmlParser<'_>, String> {
 		match File::open(path) {
-			Err(e) => {
-				Err(format!("Can't open file \"{}\": {}", path.display(), e))
-			},
-			Ok(file) => {
-				Ok(XmlParser {
-					parser:EventReader::new(Box::new(BufReader::new(file))),
-					peek_event:None,
-					peek_position:TextPosition::new(),
-					error_emitter:Rc::new(ErrorEmitter {
-						path:Some(path.to_owned()),
-					}),
-				})
-			},
+			Err(e) => Err(format!("Can't open file \"{}\": {}", path.display(), e)),
+			Ok(file) => Ok(XmlParser {
+				parser: EventReader::new(Box::new(BufReader::new(file))),
+				peek_event: None,
+				peek_position: TextPosition::new(),
+				error_emitter: Rc::new(ErrorEmitter { path: Some(path.to_owned()) }),
+			}),
 		}
 	}
 
 	#[cfg(test)]
-	pub fn new<'r, R:'r + Read>(read:R) -> XmlParser<'r> {
+	pub fn new<'r, R: 'r + Read>(read: R) -> XmlParser<'r> {
 		XmlParser {
-			parser:EventReader::new(Box::new(read)),
-			peek_event:None,
-			peek_position:TextPosition::new(),
-			error_emitter:Rc::new(ErrorEmitter { path:None }),
+			parser: EventReader::new(Box::new(read)),
+			peek_event: None,
+			peek_position: TextPosition::new(),
+			error_emitter: Rc::new(ErrorEmitter { path: None }),
 		}
 	}
 
 	/// Returns an error that combines current position and given error message.
-	pub fn fail(&self, message:&str) -> String {
+	pub fn fail(&self, message: &str) -> String {
 		self.error_emitter.emit(message, self.position())
 	}
 
 	/// Returns an error that combines given error message and position.
-	pub fn fail_with_position(
-		&self,
-		message:&str,
-		position:TextPosition,
-	) -> String {
+	pub fn fail_with_position(&self, message: &str, position: TextPosition) -> String {
 		self.error_emitter.emit(message, position)
 	}
 
-	pub fn unexpected_element(&self, elem:&Element) -> String {
+	pub fn unexpected_element(&self, elem: &Element) -> String {
 		let message = format!("Unexpected element <{}>", elem.name());
 		self.error_emitter.emit(&message, elem.position())
 	}
 
-	fn unexpected_event(&self, event:&XmlEvent) -> String {
+	fn unexpected_event(&self, event: &XmlEvent) -> String {
 		let message = format!("Unexpected event {event:?}");
 		self.error_emitter.emit(&message, self.position())
 	}
@@ -228,9 +217,10 @@ impl<'a> XmlParser<'a> {
 		}
 	}
 
-	pub fn document<R, F>(&mut self, f:F) -> Result<R, String>
+	pub fn document<R, F>(&mut self, f: F) -> Result<R, String>
 	where
-		F: FnOnce(&mut XmlParser<'_>, Document) -> Result<R, String>, {
+		F: FnOnce(&mut XmlParser<'_>, Document) -> Result<R, String>,
+	{
 		let doc = self.start_document()?;
 		let result = f(self, doc)?;
 		self.end_document()?;
@@ -251,9 +241,10 @@ impl<'a> XmlParser<'a> {
 		}
 	}
 
-	pub fn elements<R, F>(&mut self, mut f:F) -> Result<Vec<R>, String>
+	pub fn elements<R, F>(&mut self, mut f: F) -> Result<Vec<R>, String>
 	where
-		F: FnMut(&mut XmlParser<'_>, &Element) -> Result<R, String>, {
+		F: FnMut(&mut XmlParser<'_>, &Element) -> Result<R, String>,
+	{
 		let mut results = Vec::new();
 		loop {
 			match *self.peek_event() {
@@ -267,13 +258,10 @@ impl<'a> XmlParser<'a> {
 		}
 	}
 
-	pub fn element_with_name<R, F>(
-		&mut self,
-		expected_name:&str,
-		f:F,
-	) -> Result<R, String>
+	pub fn element_with_name<R, F>(&mut self, expected_name: &str, f: F) -> Result<R, String>
 	where
-		F: FnOnce(&mut XmlParser<'_>, &Element) -> Result<R, String>, {
+		F: FnOnce(&mut XmlParser<'_>, &Element) -> Result<R, String>,
+	{
 		let elem = self.start_element()?;
 		if expected_name != elem.name.local_name {
 			return Err(self.unexpected_element(&elem));
@@ -285,14 +273,12 @@ impl<'a> XmlParser<'a> {
 
 	fn start_element(&mut self) -> Result<Element, String> {
 		match self.next_event() {
-			Ok(XmlEvent::StartElement { name, attributes, .. }) => {
-				Ok(Element {
-					name,
-					attributes,
-					position:self.position(),
-					error_emitter:self.error_emitter.clone(),
-				})
-			},
+			Ok(XmlEvent::StartElement { name, attributes, .. }) => Ok(Element {
+				name,
+				attributes,
+				position: self.position(),
+				error_emitter: self.error_emitter.clone(),
+			}),
 			Ok(e) => Err(self.unexpected_event(&e)),
 			Err(e) => Err(e),
 		}
@@ -358,18 +344,17 @@ mod tests {
 
 	use super::*;
 
-	fn with_parser<F, R>(xml:&[u8], f:F) -> Result<R, String>
+	fn with_parser<F, R>(xml: &[u8], f: F) -> Result<R, String>
 	where
-		F: FnOnce(XmlParser<'_>) -> Result<R, String>, {
+		F: FnOnce(XmlParser<'_>) -> Result<R, String>,
+	{
 		f(XmlParser::new(xml))
 	}
 
 	#[test]
 	fn test_element_with_name() {
-		fn parse_with_root_name(xml:&[u8], root:&str) -> Result<(), String> {
-			with_parser(xml, |mut p| {
-				p.document(|p, _| p.element_with_name(root, |_, _elem| Ok(())))
-			})
+		fn parse_with_root_name(xml: &[u8], root: &str) -> Result<(), String> {
+			with_parser(xml, |mut p| p.document(|p, _| p.element_with_name(root, |_, _elem| Ok(()))))
 		}
 
 		let xml = br#"<?xml version="1.0"?>
@@ -393,9 +378,7 @@ mod tests {
             </a>"#;
 
 		with_parser(xml, |mut p| {
-			p.document(|p, _| {
-				p.element_with_name("a", |p, _| p.ignore_element())
-			})
+			p.document(|p, _| p.element_with_name("a", |p, _| p.ignore_element()))
 		})
 		.unwrap();
 	}
@@ -409,13 +392,11 @@ mod tests {
                 <child name="c" />
             </root>"#;
 
-		let result:String = with_parser(xml, |mut p| {
+		let result: String = with_parser(xml, |mut p| {
 			p.document(|p, _| {
 				p.element_with_name("root", |p, _| {
-					p.elements(|_, elem| {
-						elem.attr_required("name").map(|s| s.to_owned())
-					})
-					.map(|v| v.join("."))
+					p.elements(|_, elem| elem.attr_required("name").map(|s| s.to_owned()))
+						.map(|v| v.join("."))
 				})
 			})
 		})
@@ -429,10 +410,8 @@ mod tests {
 		let xml = br#"<?xml version="1.0"?>
             <x>hello world!</x>"#;
 
-		let result:String = with_parser(xml, |mut p| {
-			p.document(|p, _| p.element_with_name("x", |p, _| p.text()))
-		})
-		.unwrap();
+		let result: String =
+			with_parser(xml, |mut p| p.document(|p, _| p.element_with_name("x", |p, _| p.text()))).unwrap();
 
 		assert_eq!("hello world!", &result);
 	}
@@ -464,10 +443,7 @@ mod tests {
 		with_parser(xml, |mut p| {
 			p.document(|p, _| {
 				p.element_with_name("x", |_, elem| {
-					assert_eq!(
-						elem.attr_from_str::<usize>("a").unwrap(),
-						Some(123)
-					);
+					assert_eq!(elem.attr_from_str::<usize>("a").unwrap(), Some(123));
 					assert!(elem.attr_from_str::<usize>("b").is_err());
 					Ok(())
 				})

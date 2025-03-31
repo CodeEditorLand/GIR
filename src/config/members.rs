@@ -1,31 +1,23 @@
 use log::error;
 use toml::Value;
 
-use super::{
-	error::TomlHelper,
-	gobjects::GStatus,
-	ident::Ident,
-	parsable::Parse,
-};
+use super::{error::TomlHelper, gobjects::GStatus, ident::Ident, parsable::Parse};
 use crate::version::Version;
 
 #[derive(Clone, Debug)]
 pub struct Member {
-	pub ident:Ident,
-	pub version:Option<Version>,
-	pub deprecated_version:Option<Version>,
-	pub status:GStatus,
-	pub cfg_condition:Option<String>,
-	pub generate_doc:bool,
+	pub ident: Ident,
+	pub version: Option<Version>,
+	pub deprecated_version: Option<Version>,
+	pub status: GStatus,
+	pub cfg_condition: Option<String>,
+	pub generate_doc: bool,
 }
 
 impl Parse for Member {
-	fn parse(toml:&Value, object_name:&str) -> Option<Self> {
+	fn parse(toml: &Value, object_name: &str) -> Option<Self> {
 		let Some(ident) = Ident::parse(toml, object_name, "member") else {
-			error!(
-				"No 'name' or 'pattern' given for member for object {}",
-				object_name
-			);
+			error!("No 'name' or 'pattern' given for member for object {}", object_name);
 			return None;
 		};
 
@@ -41,50 +33,32 @@ impl Parse for Member {
 			],
 			&format!("member {object_name}"),
 		);
-		let version = toml
-			.lookup("version")
-			.and_then(Value::as_str)
-			.and_then(|s| s.parse().ok());
+		let version = toml.lookup("version").and_then(Value::as_str).and_then(|s| s.parse().ok());
 		let deprecated_version = toml
 			.lookup("deprecated_version")
 			.and_then(Value::as_str)
 			.and_then(|s| s.parse().ok());
-		let cfg_condition = toml
-			.lookup("cfg_condition")
-			.and_then(Value::as_str)
-			.map(ToOwned::to_owned);
+		let cfg_condition = toml.lookup("cfg_condition").and_then(Value::as_str).map(ToOwned::to_owned);
 
 		let status = {
 			if toml.lookup("ignore").and_then(Value::as_bool).unwrap_or(false) {
 				GStatus::Ignore
-			} else if toml
-				.lookup("manual")
-				.and_then(Value::as_bool)
-				.unwrap_or(false)
-			{
+			} else if toml.lookup("manual").and_then(Value::as_bool).unwrap_or(false) {
 				GStatus::Manual
 			} else {
 				GStatus::Generate
 			}
 		};
-		let generate_doc = toml
-			.lookup("generate_doc")
-			.and_then(Value::as_bool)
-			.unwrap_or(true);
+		let generate_doc = toml.lookup("generate_doc").and_then(Value::as_bool).unwrap_or(true);
 
-		Some(Self {
-			ident,
-			version,
-			deprecated_version,
-			status,
-			cfg_condition,
-			generate_doc,
-		})
+		Some(Self { ident, version, deprecated_version, status, cfg_condition, generate_doc })
 	}
 }
 
 impl AsRef<Ident> for Member {
-	fn as_ref(&self) -> &Ident { &self.ident }
+	fn as_ref(&self) -> &Ident {
+		&self.ident
+	}
 }
 
 pub type Members = Vec<Member>;
@@ -97,7 +71,7 @@ mod tests {
 	};
 	use crate::version::Version;
 
-	fn toml(input:&str) -> ::toml::Value {
+	fn toml(input: &str) -> ::toml::Value {
 		let value = ::toml::from_str(input);
 		assert!(value.is_ok());
 		value.unwrap()
