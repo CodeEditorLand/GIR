@@ -1,6 +1,6 @@
 [[bin]]
 name = "gir"
-path = "src/main.rs"
+path = "Source/main.rs"
 
 [dependencies]
 bitflags = "2.9"
